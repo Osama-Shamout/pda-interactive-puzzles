@@ -1,0 +1,321 @@
+#pda-retro-desktop-1{
+  --bg:#0a4f7c;
+  --panel:#c0c0c0;
+  --light:#ffffff;
+  --mid:#808080;
+  --dark:#404040;
+  --black:#111111;
+  --title:#000080;
+  --title2:#1084d0;
+  --font:"MS Sans Serif",Tahoma,Arial,sans-serif;
+  position:relative;
+  width:100%;
+  max-width:1100px;
+  min-height:620px;
+  height:min(720px,78vw);
+  min-height:520px;
+  overflow:hidden;
+  --wallpaper-url:none;
+  background-image: url("https://pdacases.com/wp-content/uploads/2026/09/wallpaper-charon.gif");
+  background-size:cover;
+  background-position:center;
+  border:3px solid #222;
+  box-shadow:inset 0 0 0 2px #777, 0 10px 35px rgba(0,0,0,.35);
+  color:#111;
+  font-family:var(--font);
+  user-select:none;
+}
+#pda-retro-desktop-1 *{box-sizing:border-box}
+
+/* RTL Layout Mode */
+#pda-retro-desktop-1.rtl {
+  direction: rtl;
+  text-align: right;
+}
+#pda-retro-desktop-1.rtl .start-link {
+  text-align: right;
+}
+#pda-retro-desktop-1.rtl .mail-item {
+  text-align: right;
+}
+#pda-retro-desktop-1.rtl .calc-display {
+  text-align: left;
+}
+
+#pda-retro-desktop-1 .noise{
+  position:absolute;inset:0;pointer-events:none;opacity:.05;
+  background-image:repeating-linear-gradient(0deg,#fff 0 1px,transparent 1px 3px);
+  mix-blend-mode:overlay;
+}
+#pda-retro-desktop-1 .desktop-area{position:absolute;inset:0 0 34px 0}
+#pda-retro-desktop-1 .desktop-icons{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,82px);
+  grid-auto-rows:90px;
+  gap:10px 12px;
+  padding:14px;
+  align-content:start;
+}
+#pda-retro-desktop-1 .desktop-icon{
+  appearance:none;background:transparent;border:0;color:#fff;width:82px;
+  padding:4px 2px;cursor:pointer;text-align:center;font:12px var(--font);position:relative;z-index:2;
+  text-shadow:1px 1px #000;
+}
+#pda-retro-desktop-1 .desktop-icon:focus{outline:1px dotted #fff;outline-offset:1px}
+#pda-retro-desktop-1 .icon-img{
+  width:42px;height:38px;margin:0 auto 5px;position:relative;
+  display:grid;place-items:center;font-size:31px;filter:drop-shadow(1px 1px #000);
+}
+#pda-retro-desktop-1 .window{
+  position:absolute;
+  left:190px;top:70px;
+  width:470px;min-width:260px;
+  max-width:calc(100% - 22px);
+  background:var(--panel);
+  border:2px solid;
+  border-color:var(--light) var(--dark) var(--dark) var(--light);
+  box-shadow:2px 2px 0 #000;
+  z-index:10;
+}
+#pda-retro-desktop-1 .window.maximized{
+  left:6px!important;top:6px!important;width:calc(100% - 12px)!important;
+  height:calc(100% - 12px)!important;
+}
+#pda-retro-desktop-1 .titlebar{
+  height:25px;background:var(--title);color:#fff;display:flex;align-items:center;
+  padding:2px 3px 2px 7px;font-weight:bold;font-size:12px;cursor:move;
+}
+#pda-retro-desktop-1 .titlebar .title{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#pda-retro-desktop-1 .win-btns{display:flex;gap:2px;position:relative;z-index:20}
+#pda-retro-desktop-1 .titlebar .translate-btn{margin:0 4px;min-width:55px;height:20px;min-height:20px;padding:1px 6px;font-size:11px;}
+#pda-retro-desktop-1 .win-btn{
+  width:20px;height:19px;padding:0;font:bold 12px Arial;line-height:15px;
+  background:var(--panel);border:2px solid;border-color:var(--light) var(--dark) var(--dark) var(--light);
+  cursor:pointer;color:#111;position:relative;z-index:21;
+}
+#pda-retro-desktop-1 .win-btn:active{border-color:var(--dark) var(--light) var(--light) var(--dark)}
+#pda-retro-desktop-1 .window-body{
+  height:calc(100% - 25px);
+  overflow:auto;
+  padding:7px;
+  background:#d4d0c8;
+}
+#pda-retro-desktop-1 .bevel{
+  border:2px solid;border-color:var(--dark) var(--light) var(--light) var(--dark);
+  background:#eee;padding:6px;
+}
+#pda-retro-desktop-1 .menu-bar{
+  display:flex;gap:2px;padding:3px 2px;background:#d4d0c8;border-bottom:1px solid #999;
+  font-size:12px;
+}
+#pda-retro-desktop-1 .menu-item{padding:2px 7px;cursor:pointer}
+#pda-retro-desktop-1 .menu-item:hover{background:var(--title);color:#fff}
+#pda-retro-desktop-1 .translate-btn{
+  direction:ltr;
+}
+#pda-retro-desktop-1 .toolbar{display:flex;gap:4px;padding:5px 0;align-items:center}
+#pda-retro-desktop-1 .retro-btn{
+  appearance:none;background:#d4d0c8;border:2px solid;
+  border-color:var(--light) var(--dark) var(--dark) var(--light);
+  min-height:25px;padding:2px 9px;font:12px var(--font);color:#111;cursor:pointer;
+}
+#pda-retro-desktop-1 .retro-btn:active{border-color:var(--dark) var(--light) var(--light) var(--dark)}
+#pda-retro-desktop-1 input,#pda-retro-desktop-1 textarea{
+  font:12px "Courier New",monospace;border:2px solid;
+  border-color:var(--dark) var(--light) var(--light) var(--dark);
+  background:#fff;color:#111;
+}
+#pda-retro-desktop-1 input{height:25px;padding:2px 6px}
+#pda-retro-desktop-1 textarea{
+  width:100%;min-height:310px;resize:none;padding:8px;line-height:1.45;
+  user-select:text;
+}
+#pda-retro-desktop-1 .file-list{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:7px;
+}
+#pda-retro-desktop-1 .file{
+  display:flex;align-items:center;gap:7px;padding:7px;background:#fff;
+  border:1px solid #999;cursor:pointer;font-size:12px;
+}
+#pda-retro-desktop-1 .file:hover{outline:1px dotted #000;outline-offset:-3px}
+#pda-retro-desktop-1 .file .ficon{font-size:24px}
+#pda-retro-desktop-1 .calc{width:245px;margin:auto}
+#pda-retro-desktop-1 .calc-display{
+  width:100%;height:46px;padding:4px 7px;text-align:right;background:#fff;
+  border:2px solid;border-color:var(--dark) var(--light) var(--light) var(--dark);
+  font:22px "Courier New",monospace;overflow:hidden;
+}
+#pda-retro-desktop-1 .calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px}
+#pda-retro-desktop-1 .calc-grid button{height:39px}
+#pda-retro-desktop-1 .status{
+  margin-top:8px;padding:4px 6px;border:1px solid #888;background:#efefef;font-size:11px;
+}
+#pda-retro-desktop-1 .taskbar{
+  position:absolute;left:0;right:0;bottom:0;height:34px;background:#c0c0c0;
+  border-top:2px solid #fff;display:flex;align-items:center;padding:2px 4px;gap:4px;z-index:999;
+}
+#pda-retro-desktop-1 .start{
+  min-width:77px;height:27px;font-weight:bold;display:flex;align-items:center;gap:5px;padding:0 7px;
+}
+#pda-retro-desktop-1 .start-logo{font-size:17px}
+#pda-retro-desktop-1 .task-buttons{display:flex;gap:3px;flex:1;overflow:hidden}
+#pda-retro-desktop-1 .task-btn{
+  height:26px;min-width:120px;max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+}
+#pda-retro-desktop-1 .lang-btn{
+  min-width:55px;height:26px;font-weight:bold;font-size:11px;padding:2px 6px;
+}
+#pda-retro-desktop-1 .clock{
+  min-width:82px;height:26px;display:flex;align-items:center;justify-content:center;
+  border:2px solid;border-color:var(--dark) var(--light) var(--light) var(--dark);
+  font-size:12px;
+}
+#pda-retro-desktop-1 .start-menu{
+  position:absolute;left:4px;bottom:33px;width:235px;background:#c0c0c0;display:none;
+  border:2px solid;border-color:#fff #404040 #404040 #fff;z-index:1000;box-shadow:2px 2px #111;
+}
+#pda-retro-desktop-1.rtl .start-menu{
+  left:auto;right:4px;
+}
+#pda-retro-desktop-1 .start-menu.open{display:block}
+#pda-retro-desktop-1 .start-head{
+  width:42px;background:#000080;color:#fff;display:flex;align-items:flex-end;justify-content:center;
+  writing-mode:vertical-rl;transform:rotate(180deg);font-weight:bold;padding:8px 5px;
+  letter-spacing:1px;
+}
+#pda-retro-desktop-1.rtl .start-head{
+  transform:rotate(0deg);
+}
+#pda-retro-desktop-1 .start-content{display:flex}
+#pda-retro-desktop-1 .start-links{flex:1;padding:5px}
+#pda-retro-desktop-1 .start-link{
+  display:flex;gap:9px;align-items:center;width:100%;border:0;background:transparent;
+  text-align:left;padding:8px 7px;font:12px var(--font);cursor:pointer;
+}
+#pda-retro-desktop-1 .start-link:hover{background:#000080;color:#fff}
+#pda-retro-desktop-1 .start-divider{border:0;border-top:1px solid #fff;border-bottom:1px solid #888;margin:5px 0}
+#pda-retro-desktop-1 .context-menu{
+  position:absolute;display:none;width:170px;background:#c0c0c0;z-index:1200;
+  border:2px solid;border-color:#fff #404040 #404040 #fff;box-shadow:2px 2px #111;
+  padding:3px;
+}
+#pda-retro-desktop-1 .context-menu.open{display:block}
+#pda-retro-desktop-1 .ctx-btn{
+  width:100%;border:0;background:transparent;text-align:left;padding:6px 8px;
+  font:12px var(--font);cursor:pointer;
+}
+#pda-retro-desktop-1.rtl .ctx-btn{text-align:right}
+#pda-retro-desktop-1 .ctx-btn:hover{background:#000080;color:#fff}
+
+#pda-retro-desktop-1 .mail-toolbar{
+  display:flex;gap:5px;align-items:center;padding:5px 0;
+}
+#pda-retro-desktop-1 .mail-toolbar .mail-folder{
+  flex:1;font-weight:bold;
+}
+#pda-retro-desktop-1 .mail-layout{
+  display:grid;
+  grid-template-columns:270px minmax(0,1fr);
+  gap:7px;
+  min-height:320px;
+}
+#pda-retro-desktop-1 .mail-list{
+  border:2px solid;border-color:var(--dark) var(--light) var(--light) var(--dark);
+  background:#fff;
+  overflow:auto;
+}
+#pda-retro-desktop-1 .mail-item{
+  display:block;
+  width:100%;
+  border:0;
+  border-bottom:1px solid #bbb;
+  background:#fff;
+  text-align:left;
+  padding:7px 8px;
+  cursor:pointer;
+  font:12px var(--font);
+  color:#111;
+}
+#pda-retro-desktop-1 .mail-item:hover,
+#pda-retro-desktop-1 .mail-item.selected{
+  background:#000080;
+  color:#fff;
+}
+#pda-retro-desktop-1 .mail-item.unread .mail-sender,
+#pda-retro-desktop-1 .mail-item.unread .mail-subject{
+  font-weight:bold;
+}
+#pda-retro-desktop-1 .mail-row-top{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:3px;
+}
+#pda-retro-desktop-1 .mail-sender{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  flex:1;
+}
+#pda-retro-desktop-1 .mail-date{
+  font-size:10px;
+  white-space:nowrap;
+  opacity:.85;
+}
+#pda-retro-desktop-1 .mail-subject{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#pda-retro-desktop-1 .mail-preview{
+  margin-top:3px;
+  font-size:10px;
+  opacity:.85;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#pda-retro-desktop-1 .mail-reader{
+  min-width:0;
+  min-height:320px;
+  overflow:auto;
+  background:#fff;
+}
+#pda-retro-desktop-1 .mail-reader-head{
+  padding:7px;
+  border-bottom:1px solid #999;
+  background:#eee;
+}
+#pda-retro-desktop-1 .mail-reader-subject{
+  font-size:14px;
+  font-weight:bold;
+  margin-bottom:7px;
+}
+#pda-retro-desktop-1 .mail-reader-meta{
+  font-size:11px;
+  line-height:1.5;
+}
+#pda-retro-desktop-1 .mail-reader-body{
+  padding:10px;
+  white-space:pre-wrap;
+  line-height:1.5;
+  font:12px "Courier New",monospace;
+  user-select:text;
+}
+#pda-retro-desktop-1 .warning{color:#800000;font-weight:bold}
+#pda-retro-desktop-1 .centered{text-align:center}
+#pda-retro-desktop-1 .mono{font-family:"Courier New",monospace}
+#pda-retro-desktop-1 .login{
+  max-width:330px;margin:25px auto;
+}
+#pda-retro-desktop-1 .login h3{margin:0 0 8px;font-size:15px}
+#pda-retro-desktop-1 .login-row{display:flex;gap:7px;margin-top:8px}
+#pda-retro-desktop-1 .login-row input{flex:1}
+#pda-retro-desktop-1 .hint{margin-top:8px;font-size:11px;color:#444}
+@media (max-width:700px){
+  #pda-retro-desktop-1{height:650px;min-height:0}
+  #pda-retro-desktop-1 .window{left:20px;top:50px;width:calc(100% - 40px)}
+  #pda-retro-desktop-1 .task-btn{min-width:95px}
+  #pda-retro-desktop-1 .mail-layout{grid-template-columns:1fr;grid-template-rows:180px minmax(250px,1fr)}
+  #pda-retro-desktop-1 .mail-list{min-height:0}
+}
