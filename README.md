@@ -1,67 +1,93 @@
-# PDA Retro Desktop
+<div align="center">
 
-**A 1990s-style desktop operating system that runs in the browser, built as the interactive layer of [Private Detective Agency](https://pdacases.com) detective game cases.**
+# 🕵️ PDA Interactive Puzzles
 
-Players investigating a PDA case "log in" to a suspect's old computer. They read the mail, dig through case files and the recycle bin, and crack the passcode on a locked archive to move the investigation forward. The whole thing is plain HTML, CSS and JavaScript: no frameworks, no build step and no backend.
+**The browser-based puzzles behind [Private Detective Agency](https://pdacases.com) detective game cases.**
 
-🔗 **Live product:** [pdacases.com](https://pdacases.com)
+Each case box comes with online puzzles that players must solve to move the investigation forward.
 
-<!-- Add a GIF here: record 10–15 s of opening windows, dragging them, and unlocking the archive -->
-<!-- ![PDA Retro Desktop demo](docs/demo.gif) -->
+[![Live product](https://img.shields.io/badge/live-pdacases.com-1d4ed8?style=flat-square)](https://pdacases.com)
+![Vanilla JS](https://img.shields.io/badge/vanilla-JavaScript-f7df1e?style=flat-square&logo=javascript&logoColor=black)
+![No dependencies](https://img.shields.io/badge/dependencies-0-success?style=flat-square)
+![Languages](https://img.shields.io/badge/UI-English%20%7C%20العربية-555?style=flat-square)
+
+<img src="docs/retro-desktop-demo.gif" alt="PDA Retro Desktop: opening the mail, dragging windows and trying the locked archive" width="820">
+
+</div>
 
 ---
 
-## Features
+## 🧩 The puzzles
 
-| Area | What it does |
-|---|---|
-| **Window manager** | Open, focus, drag, minimize, maximize and close multiple windows, with z-index stacking and a live taskbar |
-| **Start menu & desktop** | Desktop icons, a start menu and a running clock, built with real `button` elements and ARIA labels on the inputs |
-| **Built-in apps** | My Computer, Case Files, Notepad, Calculator, Mail client with an inbox and message view, Recycle Bin, About / Readme |
-| **Puzzle mechanics** | A passcode-locked archive that unlocks new evidence, plus clues hidden across mail, files and deleted items |
-| **Bilingual UI** | Full English / Arabic switching at runtime through an i18n dictionary, with right-to-left support |
-| **Safe rendering** | User-facing strings go through an HTML-escape helper before they reach the DOM |
+| Puzzle | What the player does | Status |
+|---|---|---|
+| **[Retro Desktop](puzzles/retro-desktop)** | Logs in to a suspect's 1992 computer, reads the mail, digs through case files and cracks the passcode on a locked archive | ✅ Code in this repo |
+| **[Story](https://pdacases.com/story-case-3/)** | Interactive story chapter for Case 3 | 🌐 Live · code coming |
+| **[Piano](https://pdacases.com/piano-puzzle-case-3/)** | On-screen piano puzzle for Case 3 | 🌐 Live · code coming |
+| **[Star Box](https://pdacases.com/star-box-case-3/)** | Star-box puzzle for Case 3 | 🌐 Live · code coming |
 
-## Tech stack
+New puzzles are added here as each case ships.
 
-- **Vanilla JavaScript (ES6+)**: about 1,000 lines with no dependencies
-- **CSS3**: a retro look recreated with bevels, pixel borders and a system font stack
-- **HTML5**: a semantic shell; every window is generated at runtime
+---
 
-## How it works
+## 💻 Retro Desktop
+
+A 1990s operating system recreated in the browser: windows, a taskbar, a start menu and built-in apps. Every app hides a piece of the investigation.
+
+<table>
+<tr>
+<td width="50%"><img src="docs/retro-desktop-en.png" alt="Retro Desktop in English"></td>
+<td width="50%"><img src="docs/retro-desktop-ar.png" alt="Retro Desktop in Arabic"></td>
+</tr>
+<tr>
+<td align="center"><sub>English</sub></td>
+<td align="center"><sub>العربية: the whole UI switches at runtime, right to left</sub></td>
+</tr>
+</table>
+
+**Features**
+
+- **Window manager:** open, focus, drag, minimize, maximize and close any number of windows, with z-index stacking and a live taskbar
+- **Built-in apps:** Mail client (inbox and reader), Case Files with search, My Computer, Notepad, Calculator and Recycle Bin
+- **Puzzle mechanics:** a passcode-locked archive, with clues spread across emails, files and deleted items
+- **Bilingual:** English / Arabic toggle driven by one i18n dictionary, with full RTL layout
+- **Safe rendering:** every user-facing string passes through an HTML-escape helper before it reaches the DOM
+
+**How it's built**
 
 ```
-index.html      → desktop shell: icons, start menu, taskbar
-script.js       → window manager, apps, i18n, puzzle state
-style.css       → retro theme
+puzzles/retro-desktop/
+├── index.html   desktop shell: icons, start menu, taskbar
+├── script.js    window manager, apps, i18n, puzzle state (~1,000 lines)
+└── style.css    retro theme: bevels, pixel borders, system fonts
 ```
 
-- `makeWindow()` builds each window from a template. `focusWindow()`, `minimizeWindow()` and `toggleMax()` manage the window state, and `makeDraggable()` handles moving windows with pointer events.
-- Each app (`openMail`, `openArchive`, `openCases`, …) is a self-contained function that renders its window and binds its own events.
-- `setLanguage()` swaps the whole UI between English and Arabic and redraws any window that's open.
+- `makeWindow()` builds each window from a template. `focusWindow()`, `minimizeWindow()` and `toggleMax()` manage its state, and `makeDraggable()` moves it with pointer events.
+- Each app (`openMail`, `openCases`, `openArchive`, …) is a self-contained function that renders its window and binds its own events.
+- `setLanguage()` swaps the language and re-renders every window that's open, without reloading the page.
 
-## Run locally
+---
+
+## 🚀 Run locally
+
+No install and no build step.
 
 ```bash
 git clone https://github.com/Osama-Shamout/pda-retro-desktop.git
 cd pda-retro-desktop
-# open index.html in any modern browser. No install needed.
+# open puzzles/retro-desktop/index.html in any modern browser
 ```
 
-## Roadmap
+## 🛠 Tech
 
-More puzzles from PDA cases will be added to this repository:
+Plain **HTML5, CSS3 and JavaScript (ES6+)** with no frameworks, libraries or backend. Every puzzle is a static page, so it can be embedded in the store or hosted anywhere.
 
-- [ ] Piano puzzle
-- [ ] Star-box puzzle
-- [ ] Interactive story mode
-
-## Author
+## 👤 Author
 
 **Osama Shamout**: co-founder and lead developer, Private Detective Agency
 [GitHub](https://github.com/Osama-Shamout) · [osama.shamout.it@gmail.com](mailto:osama.shamout.it@gmail.com)
 
-## License
+## 📄 License
 
 © 2026 Private Detective Agency (PDA). All rights reserved.
-This repository is published so the code can be viewed as part of a portfolio. The code, puzzle content, story and assets belong to Private Detective Agency. Copying, redistributing or reusing them commercially requires written permission.
+This code is published so it can be viewed as part of a portfolio. The puzzles, story, characters and assets belong to Private Detective Agency. Copying, redistributing or reusing them commercially requires written permission.
