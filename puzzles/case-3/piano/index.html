@@ -1,0 +1,1650 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e0b09">
+<title>Case 3</title>
+<script>
+  // Language from the address: /ar/… (or …/ar, or ?lang=ar) = Arabic, everything else = English
+  if (/^\/ar(\/|$)|\/ar\/?$/.test(location.pathname) || new URLSearchParams(location.search).get('lang') === 'ar') {
+    document.documentElement.lang = 'ar';
+    document.documentElement.dir = 'rtl';
+  }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Aref+Ruqaa:wght@400;700&family=Neonderthaw&family=Reem+Kufi:wght@500&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --room: #0e0b09; --ink: #e9dcc4; --dim: rgba(233, 220, 196, 0.6); --brass: #c9a45c;
+    --right: #e8842a; --left: #2f7de1;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --type: "Special Elite", "Courier New", monospace;
+  }
+  html[lang="ar"] { --type: "Amiri", serif; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; }
+  html { -webkit-font-smoothing: antialiased; }
+  body {
+    background: var(--room); color: var(--ink); font-family: var(--type);
+    -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none;
+  }
+  button { font: inherit; }
+  #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; } /* swipes look around the room */
+  #gl.hot { cursor: pointer; }
+
+  .film {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background:
+      radial-gradient(ellipse 75% 70% at 50% 45%, transparent 45%, rgba(0,0,0,0.75) 100%),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0.08 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+  .label {
+    position: fixed; z-index: 2; margin: 0; font-weight: 400; font-size: 14px; color: var(--dim);
+    top: max(20px, env(safe-area-inset-top)); inset-inline-start: max(20px, env(safe-area-inset-left));
+  }
+  html[lang="ar"] .label { font-size: 18px; }
+  .status {
+    position: fixed; z-index: 2; left: 0; right: 0; margin: 0; padding: 0 16px; text-align: center;
+    bottom: max(22px, calc(env(safe-area-inset-bottom) + 12px));
+    font-size: 15px; text-shadow: 0 1px 8px rgba(0,0,0,0.9); pointer-events: none;
+  }
+  html[lang="ar"] .status { font-size: 19px; }
+  @media (max-width: 640px) { .status { bottom: max(78px, calc(env(safe-area-inset-bottom) + 70px)); } }
+
+  .loader {
+    position: fixed; inset: 0; z-index: 50; display: grid; place-items: center;
+    background: var(--room); color: var(--dim); font-size: 15px;
+    transition: opacity 0.8s var(--ease), visibility 0.8s;
+  }
+  .loader.done { opacity: 0; visibility: hidden; }
+
+  /* ---------- Hotspot markers: soft pulsing rings over the things you can look at ---------- */
+  .spots { position: fixed; inset: 0; z-index: 2; pointer-events: none; }
+  .spot {
+    position: absolute; left: 0; top: 0; width: 44px; height: 44px; margin: -22px 0 0 -22px; padding: 0; border: 0;
+    border-radius: 50%; background: transparent; cursor: pointer; pointer-events: auto;
+    display: grid; place-items: center; transition: opacity 0.4s var(--ease);
+  }
+  .spot::before {
+    content: ""; width: 14px; height: 14px; border-radius: 50%;
+    background: rgba(255, 236, 200, 0.92); box-shadow: 0 0 12px rgba(255, 210, 140, 0.9);
+  }
+  .spot::after {
+    content: ""; position: absolute; width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid rgba(255, 230, 190, 0.8); animation: ping 2.2s var(--ease) infinite;
+  }
+  @keyframes ping { 0% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(3); opacity: 0; } }
+  .spot:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+  .spot.away { opacity: 0; pointer-events: none; }
+  .tip {
+    position: fixed; z-index: 3; padding: 6px 10px; border-radius: 6px; pointer-events: none;
+    background: rgba(18, 14, 10, 0.85); color: var(--ink); font-size: 13px; white-space: nowrap;
+    opacity: 0; transform: translate(-50%, -150%); transition: opacity 0.15s ease-out;
+  }
+  html[lang="ar"] .tip { font-size: 16px; }
+  .tip.on { opacity: 1; }
+
+  /* ---------- Shared buttons ---------- */
+  .pill {
+    height: 44px; padding: 0 18px; border: 0; border-radius: 999px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px; font-size: 15px; color: var(--ink);
+    background: rgba(24, 18, 13, 0.78); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    box-shadow: 0 0 0 1px rgba(233,220,196,0.14), 0 8px 22px rgba(0,0,0,0.45);
+    transition-property: background-color, scale; transition-duration: 0.15s; transition-timing-function: var(--ease);
+  }
+  html[lang="ar"] .pill { font-size: 18px; }
+  .pill:hover { background: rgba(48, 36, 26, 0.9); }
+  .pill:active { scale: 0.96; }
+  .pill:focus-visible, .key:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+  .pill[hidden] { display: none; }
+  .pill .count { font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }
+  .pill.quiet { background: transparent; box-shadow: none; color: var(--dim); padding: 0 10px; }
+
+  /* ---------- Hints ---------- */
+  .hints {
+    position: fixed; z-index: 4; display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+    inset-inline-end: max(16px, env(safe-area-inset-right)); bottom: max(16px, calc(env(safe-area-inset-bottom) + 8px));
+    width: min(330px, calc(100vw - 32px)); pointer-events: none;
+  }
+  .hints > * { pointer-events: auto; }
+  .hint-list {
+    list-style: none; margin: 0; padding: 4px; width: 100%; display: flex; flex-direction: column; gap: 10px;
+    max-height: min(46vh, 420px); overflow-y: auto; overscroll-behavior: contain;
+    scrollbar-width: thin; scrollbar-color: rgba(233,220,196,0.3) transparent;
+  }
+  .hint-list[hidden] { display: none; }
+  .card {
+    background: #efe3c8; color: #2a1f14; border-radius: 3px; padding: 12px 14px; font-size: 14px; line-height: 1.5;
+    text-wrap: pretty; box-shadow: 0 1px 0 rgba(255,255,255,0.4) inset, 0 10px 24px rgba(0,0,0,0.5);
+  }
+  .card:nth-child(odd) { rotate: -0.8deg; } .card:nth-child(even) { rotate: 0.6deg; }
+  .card .tag { display: block; font-size: 12px; color: #8a3b1e; margin-bottom: 4px; }
+  .card .look {
+    margin-top: 8px; border: 0; border-radius: 999px; padding: 6px 14px; cursor: pointer;
+    background: #2a1f14; color: #efe3c8; font-size: 13px; transition: scale 0.15s var(--ease);
+  }
+  .card .look:active { scale: 0.96; }
+  html[lang="ar"] .card { font-size: 17px; line-height: 1.7; }
+  html[lang="ar"] .card .tag, html[lang="ar"] .card .look { font-size: 15px; }
+  .hint-actions { display: flex; gap: 8px; }
+  .music {
+    position: fixed; z-index: 4; inset-inline-start: max(16px, env(safe-area-inset-left)); bottom: max(16px, calc(env(safe-area-inset-bottom) + 8px));
+  }
+  .music svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .music[aria-pressed="false"] { color: var(--dim); }
+  .music[aria-pressed="false"] svg { opacity: 0.5; }
+
+  /* ---------- Close-up views (sheet, painting, behind the door) ---------- */
+  .view {
+    position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 64px 16px 24px;
+    background: rgba(8, 6, 4, 0.72); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    overflow: auto; touch-action: pan-x pan-y pinch-zoom;
+  }
+  .view[hidden] { display: none; }
+  .view .close { position: fixed; top: max(14px, env(safe-area-inset-top)); inset-inline-end: max(14px, env(safe-area-inset-right)); z-index: 2; }
+  .view-body { max-width: min(860px, 100%); width: 100%; display: grid; justify-items: center; gap: 14px; }
+
+  .brass-plate {
+    padding: 26px 34px; border-radius: 10px; text-align: center; max-width: 100%;
+    background: linear-gradient(135deg, #f2d895 0%, #c79b4c 35%, #f0d48c 55%, #a8823e 100%);
+    box-shadow: inset 0 2px 0 rgba(255,255,255,0.5), inset 0 -3px 0 rgba(0,0,0,0.25), 0 18px 40px rgba(0,0,0,0.6);
+  }
+  .brass-plate p {
+    margin: 0; font-family: "Special Elite", serif; font-weight: 400; font-size: clamp(24px, 5vw, 40px); line-height: 1.5;
+    color: #3a2608; text-shadow: 0 1px 0 rgba(255,240,200,0.6), 0 -1px 0 rgba(60,35,5,0.35);
+  }
+  html[lang="ar"] .brass-plate p { font-family: "Amiri", serif; font-weight: 700; }
+  /* Aged paper: soft fibres and darker edges */
+  .paper {
+    background-color: #f1e6c9; color: #2a1f14; border-radius: 3px; width: 100%;
+    background-image:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='0.04 0.6' numOctaves='3' seed='3'/><feColorMatrix values='0 0 0 0 0.45  0 0 0 0 0.33  0 0 0 0 0.18  0 0 0 0.12 0'/></filter><rect width='100%' height='100%' filter='url(%23p)'/></svg>"),
+      radial-gradient(ellipse at 50% 45%, rgba(255,250,235,0.55), rgba(160,120,60,0.28));
+    box-shadow: 0 1px 0 rgba(255,255,255,0.5) inset, 0 24px 60px rgba(0,0,0,0.6);
+  }
+  /* Gilded frame around the oil painting */
+  .frame {
+    padding: clamp(12px, 2.4vw, 26px); border-radius: 4px; width: min(880px, 100%);
+    background: linear-gradient(135deg, #8a6420 0%, #e9c46a 18%, #a37a2c 36%, #f3d98a 52%, #9a7028 70%, #d9b25a 86%, #7a561a 100%);
+    box-shadow: inset 0 0 0 3px rgba(60,40,10,0.6), inset 0 0 0 7px rgba(255,230,160,0.35), inset 0 0 18px rgba(0,0,0,0.6), 0 26px 60px rgba(0,0,0,0.65);
+  }
+  .frame canvas { display: block; width: 100%; height: auto; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.4), 0 0 0 2px rgba(40,25,5,0.7); }
+  /* Picture sheet (Hint 2) */
+  .sheet { padding: 22px clamp(14px, 3vw, 30px) 30px; direction: ltr; }
+  .sheet h2 { margin: 0; text-align: center; font-family: "Special Elite", serif; font-weight: 400; font-size: 28px; }
+  html[lang="ar"] .sheet h2 { font-family: "Amiri", serif; font-weight: 700; font-size: 30px; }
+  html[lang="ar"] .sheet h3 { direction: rtl; font-size: 17px; }
+  .sheet .sub { margin: 4px auto 14px; text-align: center; font-size: 13px; color: #6a5a44; max-width: 60ch; }
+  html[lang="ar"] .sheet .sub { direction: rtl; font-size: 16px; }
+  .sheet h3 { margin: 16px 0 8px; font-size: 14px; color: #7a4a16; font-weight: 400; }
+  .sheet .cells { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+  .cell { position: relative; border: 1px solid #c9b48a; border-radius: 6px; padding: 18px 5px 5px; background: rgba(255,250,235,0.6); }
+  .cell b {
+    position: absolute; top: 3px; left: 4px; width: 18px; height: 18px; border-radius: 50%;
+    background: #2a1f14; color: #f1e6c9; font: 700 10px/18px Arial, sans-serif; text-align: center;
+  }
+  .cell small { position: absolute; top: 4px; right: 6px; font: 10px Arial, sans-serif; }
+  .cell svg { display: block; width: 100%; height: auto; }
+  /* Painting (Hint 3) */
+  /* Behind the door */
+  .reveal { padding: 34px 30px; max-width: 520px; text-align: center; }
+  .reveal h2 { margin: 0 0 12px; font-weight: 400; font-size: 26px; }
+  .reveal p { margin: 0; font-size: 17px; line-height: 1.6; }
+  .reveal img { max-width: 100%; margin-bottom: 14px; }
+  html[lang="ar"] .reveal h2 { font-family: "Amiri", serif; font-weight: 700; font-size: 30px; }
+  html[lang="ar"] .reveal p { font-size: 20px; }
+
+  /* ---------- The piano ---------- */
+  .piano {
+    position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; justify-content: center; gap: 12px;
+    padding: max(12px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.06), transparent 18%),
+      linear-gradient(180deg, #17120e 0%, #0b0907 55%, #120d0a 100%);
+    touch-action: none;
+  }
+  .piano[hidden] { display: none; }
+  .piano-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; direction: ltr; }
+  .lamps { display: flex; gap: 14px; }
+  .lamps i {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #6b5a3a, #2e2416);
+    box-shadow: inset 0 0 0 2px #8a6f3c; transition: background 0.4s var(--ease), box-shadow 0.4s var(--ease);
+  }
+  .lamps i.on { background: radial-gradient(circle at 35% 30%, #fff3c4, #f2b84b); box-shadow: inset 0 0 0 2px #c9a45c, 0 0 18px 4px rgba(255,190,90,0.75); }
+  .kb { position: relative; direction: ltr; }
+  .kb .hand {
+    display: block; margin: 0 0 6px; font-size: 12px; letter-spacing: 0.02em; font-family: Arial, sans-serif; font-weight: 700;
+  }
+  .kb-r .hand { color: var(--right); } .kb-l .hand { color: var(--left); }
+  html[lang="ar"] .kb .hand { font-family: "Amiri", serif; font-size: 15px; direction: rtl; text-align: right; }
+  /* Red felt strip above the keys, as on a real piano */
+  .keys {
+    position: relative; display: flex; height: clamp(90px, 30vh, 190px);
+    border-top: 7px solid #6b1414; border-radius: 3px;
+    box-shadow: 0 -1px 0 #2a0606, 0 10px 24px rgba(0,0,0,0.6);
+  }
+  .key { position: relative; border: 0; padding: 0; cursor: pointer; touch-action: none; }
+  .key.white {
+    flex: 1; margin: 0 1px; border-radius: 0 0 6px 6px;
+    background: linear-gradient(180deg, #ece5d3 0%, #fffdf6 12%, #f6f0e2 85%, #e2dac6 100%);
+    box-shadow: inset 0 -6px 0 #d4cbb4, inset 0 0 0 1px rgba(0,0,0,0.12), 0 3px 4px rgba(0,0,0,0.5);
+    transition: transform 0.06s ease-out, box-shadow 0.06s ease-out, background 0.06s ease-out;
+  }
+  .key.black {
+    position: absolute; top: 0; z-index: 2; width: 6.2%; height: 62%; border-radius: 0 0 4px 4px;
+    background: linear-gradient(180deg, #050505 0%, #2b2b2b 70%, #111 100%);
+    box-shadow: inset 0 -5px 0 #000, inset 1px 0 0 rgba(255,255,255,0.12), 0 4px 6px rgba(0,0,0,0.6);
+    transition: transform 0.06s ease-out, box-shadow 0.06s ease-out;
+  }
+  .key.black::before { content: ""; position: absolute; inset: 0 -6px; } /* wider hit area for thumbs */
+  .key.down { transform: translateY(3px); }
+  .kb-r .key.white.down { background: linear-gradient(180deg, #f3d3b0, #fbe6cf); box-shadow: inset 0 -3px 0 #d4a57a, inset 0 0 18px rgba(232,132,42,0.65), 0 1px 2px rgba(0,0,0,0.5); }
+  .kb-l .key.white.down { background: linear-gradient(180deg, #c8daf3, #e3edfb); box-shadow: inset 0 -3px 0 #8fb0dc, inset 0 0 18px rgba(47,125,225,0.6), 0 1px 2px rgba(0,0,0,0.5); }
+  .kb-r .key.black.down { box-shadow: inset 0 -2px 0 #000, inset 0 0 14px rgba(232,132,42,0.95), 0 1px 3px rgba(0,0,0,0.6); }
+  .kb-l .key.black.down { box-shadow: inset 0 -2px 0 #000, inset 0 0 14px rgba(47,125,225,0.95), 0 1px 3px rgba(0,0,0,0.6); }
+  /* "Show answer": the next keys to press glow and pulse */
+  .key.guide { z-index: 1; animation: guide 0.9s ease-in-out infinite alternate; }
+  .key.black.guide { z-index: 3; }
+  .kb-r .key.white.guide { background: linear-gradient(180deg, #ffd28a, #fff1c9); --glow: rgba(255,170,60,0.95); }
+  .kb-l .key.white.guide { background: linear-gradient(180deg, #9cc6ff, #e2efff); --glow: rgba(80,160,255,0.95); }
+  .kb-r .key.black.guide { background: linear-gradient(180deg, #a85a10, #f0a040); --glow: rgba(255,170,60,0.95); }
+  .kb-l .key.black.guide { background: linear-gradient(180deg, #1d4f9c, #5aa0ff); --glow: rgba(80,160,255,0.95); }
+  @keyframes guide {
+    from { box-shadow: 0 0 16px 4px var(--glow), 0 0 4px 1px #fff, inset 0 0 16px rgba(255,255,255,0.7); filter: brightness(1.05); }
+    to   { box-shadow: 0 0 44px 16px var(--glow), 0 0 8px 2px #fff, inset 0 0 26px #fff; filter: brightness(1.25); }
+  }
+  .key .letter {
+    position: absolute; left: 0; right: 0; bottom: 10px; text-align: center; pointer-events: none;
+    font: 700 13px Arial, sans-serif; color: rgba(40,30,20,0.55);
+  }
+  .key.black .letter { bottom: 8px; color: rgba(255,255,255,0.6); font-size: 11px; }
+  @media (pointer: coarse) { .key .letter { display: none; } }
+  .coach {
+    position: absolute; inset: -6px; border: 2px dashed; border-radius: 8px; pointer-events: none; transition: opacity 0.6s ease-out;
+  }
+  .kb-r .coach { border-color: rgba(232,132,42,0.85); } .kb-l .coach { border-color: rgba(47,125,225,0.85); }
+  .coach.gone { opacity: 0; }
+  .piano-note { margin: 0; text-align: center; font-size: 13px; color: var(--dim); min-height: 1.4em; transition: opacity 0.4s ease-out; }
+  html[lang="ar"] .piano-note { font-size: 16px; }
+  .rotate {
+    position: fixed; inset: 0; z-index: 30; display: none; place-items: center; text-align: center;
+    background: #0b0907; color: var(--ink); padding: 24px;
+  }
+  .rotate svg { width: 84px; height: 84px; margin: 0 auto 14px; display: block; animation: turn 2.4s var(--ease) infinite; }
+  @keyframes turn { 0%, 20% { rotate: 0deg; } 60%, 100% { rotate: -90deg; } }
+  .rotate p { margin: 4px 0; font-size: 18px; }
+  .rotate p + p { font-family: "Amiri", serif; color: var(--brass); }
+  @media (orientation: portrait) and (pointer: coarse) { body.playing .rotate { display: grid; } }
+
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @media (prefers-reduced-motion: reduce) { .spot::after { animation: none; } }
+</style>
+<script type="importmap">
+  { "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  } }
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+</head>
+<body>
+  <div class="loader" id="loader">…</div>
+  <h1 class="label" id="label"></h1>
+  <canvas id="gl" aria-hidden="true"></canvas>
+  <div class="film" aria-hidden="true"></div>
+  <div class="spots" id="spots"></div>
+  <div class="tip" id="tip" aria-hidden="true"></div>
+  <p class="status" id="status" aria-live="polite"></p>
+
+  <aside class="hints" id="hints">
+    <ol class="hint-list" id="hintList" aria-live="polite"></ol>
+    <div class="hint-actions">
+      <button class="pill quiet" id="hintToggle" type="button" hidden></button>
+      <button class="pill" id="hintBtn" type="button"></button>
+      <button class="pill" id="answerBtn" type="button" hidden></button>
+    </div>
+  </aside>
+
+  <button class="pill music" id="musicBtn" type="button" aria-pressed="true">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg>
+    <span id="musicLabel"></span>
+  </button>
+
+  <div class="view" id="view" hidden role="dialog" aria-modal="true">
+    <button class="pill close" id="viewClose" type="button"></button>
+    <div class="view-body" id="viewBody"></div>
+  </div>
+
+  <section class="piano" id="piano" hidden aria-label="">
+    <div class="piano-top">
+      <button class="pill" id="pianoClose" type="button"></button>
+      <div class="lamps" id="pianoLamps" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <button class="pill" id="pianoSheet" type="button" hidden></button>
+    </div>
+    <div class="kb kb-r"><span class="hand" id="handR"></span><div class="keys" id="keysR"></div><div class="coach"></div></div>
+    <div class="kb kb-l"><span class="hand" id="handL"></span><div class="keys" id="keysL"></div><div class="coach"></div></div>
+    <p class="piano-note" id="pianoNote" aria-live="polite"></p>
+  </section>
+  <div class="rotate" id="rotate">
+    <div>
+      <svg viewBox="0 0 84 84" aria-hidden="true"><rect x="28" y="12" width="28" height="56" rx="5" fill="none" stroke="#c9a45c" stroke-width="3"/><circle cx="42" cy="62" r="2.5" fill="#c9a45c"/></svg>
+      <p>Rotate your phone</p><p>قلّب الجوال بالعرض</p>
+    </div>
+  </div>
+
+<script type="module">
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+/* =====================================================================
+   CONFIG: edit everything here. كل المحتوى بتعدله من هون.
+   The answer: Für Elise opening, 4 lines, 27 steps. Each step lists the keys pressed together.
+   R = upper keyboard (right hand, C4…E5), L = lower keyboard (left hand, E2…A3).
+   ===================================================================== */
+const CONFIG = {
+  solution: [
+    [['R:E5'], ['R:D#5'], ['R:E5'], ['R:D#5'], ['R:E5'], ['R:B4'], ['R:D5'], ['R:C5']],
+    [['R:A4', 'L:A2'], ['L:E3'], ['L:A3'], ['R:C4'], ['R:E4'], ['R:A4']],
+    [['R:B4', 'L:E2'], ['L:E3'], ['L:G#3'], ['R:E4'], ['R:G#4'], ['R:B4']],
+    [['R:C5', 'L:A2'], ['L:E3'], ['L:A3'], ['R:E4'], ['R:C5'], ['R:B4'], ['R:A4', 'L:A2']],
+  ],
+  pairWindow: 400,      // ms: the two keys of a "together" step must be this close
+  volume: 0.85,         // 0 = silent, 1 = full
+  // Painting (Hint 3): how far each of the first 9 notes is below E5, in semitones. The first note is on the RIGHT.
+  painting: [0, 1, 0, 1, 0, 5, 2, 4, 7],
+  hintOrder: ['riddle', 'painting', 'sheet'], // order the Hint button gives them (easiest last)
+
+  en: {
+    pageTitle: 'Case 3', label: 'Case 3', loading: 'Setting up the room…',
+    intro: 'Explore the room. Tap anything that glows to look closer.',
+    swipe: 'Swipe left or right to look around.',
+    spots: { door: 'Door', library: 'Library', painting: 'Painting', piano: 'Piano', lang: 'عربي' },
+    // In English the plaque must still say "read from the right": that is how the painting is solved
+    painting: { plaque: 'Read the mountains the way you read your language' },
+    sheet: {
+      title: 'Melody Sheet',
+      sub: 'Right-hand keys light orange, left-hand keys light blue. Two lit keys with “+ together” = press both at the same time.',
+      line: 'Line {n}', right: 'right hand', left: 'left hand', together: '+ together',
+    },
+    piano: {
+      name: 'Piano', right: 'R  RIGHT HAND · upper keyboard', left: 'L  LEFT HAND · lower keyboard',
+      coach: 'Top = right hand · Bottom = left hand', mouse: 'Use your mouse or keyboard',
+      close: 'Back to the room', sheet: 'Sheet', loading: 'Tuning the piano…',
+      guide: 'Press the glowing key · line {l} of 4, step {s} of {n}', guideTogether: 'Press both glowing keys together · line {l} of 4, step {s} of {n}',
+    },
+    lineDone: 'A lamp lights up above the door ({n} of 4).',
+    solved: 'The last lamp lights. The door unlocks.',
+    doorLocked: 'The door is locked. Four lamps above it are dark.',
+    reveal: { title: 'Behind the door', text: 'Put the next clue here. Edit CONFIG.reveal in the code.', image: '' },
+    hints: {
+      riddle: 'The official music of gas trucks in Jordan.',
+      painting: 'The painting above the piano hides a melody. Read the mountains the way you read your language: from the right.',
+      sheet: 'One book in the library glows. Inside it is a sheet that shows every key in pictures.',
+      answer: 'Für Elise, the opening theme. Play the picture sheet from the library: 27 steps in 4 lines, both hands.',
+    },
+    ui: { hint: 'Hint', showAnswer: 'Show answer', answerTitle: 'Answer', hintTitle: 'Hint {n} of {total}', hide: 'Hide', show: 'Hints', look: 'Look', close: 'Close', sound: 'Sound' },
+  },
+
+  ar: {
+    pageTitle: 'القضية 3', label: 'القضية 3', loading: 'جارٍ تجهيز الغرفة…',
+    intro: 'استكشف الغرفة. اضغط على أي شيء يلمع لتراه عن قرب.',
+    swipe: 'اسحب يميناً أو يساراً لتتجول في الغرفة.',
+    spots: { door: 'الباب', library: 'المكتبة', painting: 'اللوحة', piano: 'البيانو', lang: 'English' },
+    painting: { plaque: 'اقرأ الجبال كما تقرأ لغتك' },
+    sheet: {
+      title: 'ورقة الألحان',
+      sub: 'مفاتيح اليد اليمنى برتقالية، ومفاتيح اليد اليسرى زرقاء. مفتاحان مضيئان مع «معاً» = اضغط الاثنين في نفس الوقت.',
+      line: 'السطر {n}', right: 'يد يمنى', left: 'يد يسرى', together: '+ معاً',
+    },
+    piano: {
+      name: 'البيانو', right: 'اليد اليمنى، اللوحة العليا', left: 'اليد اليسرى، اللوحة السفلى',
+      coach: 'فوق = اليد اليمنى، تحت = اليد اليسرى', mouse: 'استخدم الماوس أو لوحة المفاتيح',
+      close: 'رجوع للغرفة', sheet: 'الورقة', loading: 'جارٍ دوزنة البيانو…',
+      guide: 'اكبس المفتاح المضيء · السطر {l} من 4، الخطوة {s} من {n}', guideTogether: 'اكبس المفتاحين المضيئين مع بعض · السطر {l} من 4، الخطوة {s} من {n}',
+    },
+    lineDone: 'يضيء مصباح فوق الباب ({n} من 4).',
+    solved: 'يضيء المصباح الأخير. ينفتح قفل الباب.',
+    doorLocked: 'الباب مقفل. فوقه أربعة مصابيح مطفأة.',
+    reveal: { title: 'خلف الباب', text: 'ضع الدليل التالي هنا. عدّل CONFIG.reveal في الكود.', image: '' },
+    hints: {
+      riddle: 'الموسيقى الرسمية لسيارات الغاز في الأردن.',
+      painting: 'اللوحة فوق البيانو تخفي لحناً. اقرأ الجبال كما تقرأ لغتك.',
+      sheet: 'كتاب واحد في المكتبة يلمع. في داخله ورقة تُظهر كل مفتاح بالصور.',
+      answer: 'فور إليزه، المقطع الافتتاحي. اعزف ورقة الصور من المكتبة: 27 خطوة في 4 أسطر، باليدين.',
+    },
+    ui: { hint: 'تلميح', showAnswer: 'أظهر الحل', answerTitle: 'الحل', hintTitle: 'تلميح {n} من {total}', hide: 'إخفاء', show: 'التلميحات', look: 'انظر', close: 'إغلاق', sound: 'الصوت' },
+  },
+};
+/* ======================== end of CONFIG ======================== */
+
+const LANG = document.documentElement.lang === 'ar' ? 'ar' : 'en';
+const RTL = LANG === 'ar';
+const T = CONFIG[LANG];
+const fill = (text, vars) => text.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
+const $ = id => document.getElementById(id);
+const touch = matchMedia('(pointer: coarse)').matches;
+const calm = matchMedia('(prefers-reduced-motion: reduce)').matches; // only the camera drift stops; puzzle motion always plays
+const storeKey = 'pda-piano:' + location.pathname.replace(/^\/ar(?=\/)/, '');
+const store = {
+  get() { try { return JSON.parse(localStorage.getItem(storeKey) || '{}'); } catch { return {}; } },
+  set(patch) { try { localStorage.setItem(storeKey, JSON.stringify({ ...store.get(), ...patch })); } catch { /* ignore */ } },
+};
+
+document.title = T.pageTitle;
+$('label').textContent = T.label;
+$('loader').textContent = T.loading;
+// Fonts first: the painting plaque is drawn into a texture with them
+await Promise.all(['700 50px "Amiri"', '30px "Aref Ruqaa"', '500 170px "Reem Kufi"', '200px "Neonderthaw"', '20px "Special Elite"'].map(f => document.fonts.load(f).catch(() => {})));
+
+// Uploaded files: on /ar/slug/ they usually sit beside the English page; also accept files uploaded without the folder
+function assetUrls(name) {
+  const english = location.origin + location.pathname.replace(/^\/ar(?=\/)/, '') + location.search;
+  const base = name.split('/').pop();
+  return [...new Set([new URL(name, english).href, new URL(name, location.href).href, new URL(base, english).href])];
+}
+
+/* ===================== Sound ===================== */
+const SR = 44100;
+let audio = null;
+const getAudio = () => {
+  audio ??= new AudioContext();
+  if (audio.state === 'suspended') audio.resume();
+  return audio;
+};
+const decoder = new OfflineAudioContext(1, SR, SR); // decodes without a user gesture
+
+// Note names ↔ MIDI numbers
+const NOTE_INDEX = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+const midiOf = name => { const m = name.match(/^([A-G])(#|s)?(\d)$/); return (Number(m[3]) + 1) * 12 + NOTE_INDEX[m[1]] + (m[2] ? 1 : 0); };
+
+// Real grand piano (Salamander), one recording every three semitones; notes in between are pitched from the nearest
+const SAMPLE_NAMES = ['C2', 'Ds2', 'Fs2', 'A2', 'C3', 'Ds3', 'Fs3', 'A3', 'C4', 'Ds4', 'Fs4', 'A4', 'C5', 'Ds5', 'Fs5'];
+const samples = new Map();
+async function loadSample(name) {
+  for (const url of assetUrls(`assets/piano/${name}.mp3`)) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      samples.set(midiOf(name), await decoder.decodeAudioData(await res.arrayBuffer()));
+      return;
+    } catch { /* try the next place */ }
+  }
+}
+const samplesReady = Promise.all(SAMPLE_NAMES.map(loadSample));
+
+/* ---- The haunted piano ----
+   A piano nobody has tuned in decades: every key is a little off pitch (always the same amount for
+   the same key), a second string beats slowly against it, the tone is dark, and every note carries
+   a long echo, like playing alone in an empty house. */
+let fx = null;
+function darkEcho(a, seconds) {
+  const len = Math.ceil(a.sampleRate * seconds), buf = a.createBuffer(2, len, a.sampleRate);
+  for (let c = 0; c < 2; c++) {
+    const d = buf.getChannelData(c); let smooth = 0;
+    for (let i = 0; i < len; i++) { smooth = smooth * 0.7 + (Math.random() * 2 - 1) * 0.3; d[i] = smooth * (1 - i / len) ** 2.5; } // darkened noise tail
+  }
+  return buf;
+}
+function getFx() {
+  if (fx) return fx;
+  const a = getAudio(), out = a.createGain(), verb = a.createConvolver(), dark = a.createBiquadFilter(), wet = a.createGain();
+  verb.buffer = darkEcho(a, 5);
+  dark.type = 'lowpass'; dark.frequency.value = 1600;
+  wet.gain.value = 0.7;
+  out.connect(a.destination);
+  verb.connect(dark).connect(wet).connect(a.destination);
+  return (fx = { out, verb });
+}
+const detuneOf = n => (((n * 7919) % 37) - 18) / 1200; // fixed per key: up to ±18 cents out of tune
+function hauntedVoice(a, note, at, level, { send = 0.45, warble = 0 } = {}) {
+  const n = midiOf(note), { out, verb } = getFx();
+  let best = null;
+  for (const m of samples.keys()) if (best === null || Math.abs(m - n) < Math.abs(best - n)) best = m;
+  const gain = a.createGain(), tone = a.createBiquadFilter(), echo = a.createGain();
+  tone.type = 'lowpass'; tone.frequency.value = 2400; tone.Q.value = 0.4;          // dull, aged hammers
+  gain.gain.value = level;
+  echo.gain.value = send;
+  tone.connect(gain); gain.connect(out); gain.connect(echo).connect(verb);
+  const srcs = [[0, 1], [0.009, 0.4]].map(([extra, g]) => {                          // main string + a sour second string
+    const s = a.createBufferSource(), sg = a.createGain();
+    s.buffer = samples.get(best);
+    s.playbackRate.value = 2 ** ((n - best) / 12 + detuneOf(n) + extra);
+    if (warble) { // old tape: the pitch slowly wobbles
+      const lfo = a.createOscillator(), depth = a.createGain();
+      lfo.frequency.value = 0.35 + Math.random() * 0.2; depth.gain.value = warble;
+      lfo.connect(depth).connect(s.playbackRate); lfo.start(at); lfo.stop(at + 6);
+    }
+    sg.gain.value = g; s.connect(sg).connect(tone); s.start(at);
+    return s;
+  });
+  return { srcs, gain };
+}
+
+const voices = new Map(); // key id → { srcs, gain }
+function noteOn(id, note) {
+  if (CONFIG.volume <= 0 || !samples.size) return;
+  const a = getAudio();
+  fade(voices.get(id), 0.35); // the same key struck again: its previous note gives way softly
+  const v = hauntedVoice(a, note, a.currentTime, CONFIG.volume * 0.85);
+  voices.set(id, v);
+  ringing.push(v);
+  while (ringing.length > 24) fade(ringing.shift(), 0.4); // keep the sound clear when playing fast
+}
+// Like a real piano with the sustain pedal down: lifting the finger does not stop the note,
+// it keeps ringing and dies away naturally, so fast playing stays smooth and connected.
+const ringing = [];
+function noteOff(id) {
+  const v = voices.get(id);
+  if (!v) return;
+  voices.delete(id);
+  fade(v, 3.5);
+}
+function fade(v, seconds) {
+  if (!v || v.fading) return;
+  v.fading = true;
+  const t = audio.currentTime;
+  v.gain.gain.cancelScheduledValues(t);
+  v.gain.gain.setValueAtTime(v.gain.gain.value, t);
+  v.gain.gain.exponentialRampToValueAtTime(0.0001, t + seconds);
+  for (const s of v.srcs) s.stop(t + seconds + 0.05);
+  v.srcs[0].onended = () => { const i = ringing.indexOf(v); if (i >= 0) ringing.splice(i, 1); };
+}
+
+// Modelled effects: a short noise strike ringing through resonators tuned like brass, wood or a hinge
+function strike(ctx, out, at, { modes, hp = 300, burst = 0.004, body = 1 }) {
+  const len = Math.ceil(SR * burst), buf = ctx.createBuffer(1, len, SR), d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 2;
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  const high = ctx.createBiquadFilter(); high.type = 'highpass'; high.frequency.value = hp;
+  src.connect(high);
+  const click = ctx.createGain(); click.gain.value = 0.35; high.connect(click).connect(out);
+  for (const [f, g, ring] of modes) {
+    const q = Math.PI * f * ring;
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q;
+    const amp = ctx.createGain(); amp.gain.value = g * Math.sqrt(q) * body;
+    high.connect(bp).connect(amp).connect(out);
+  }
+  src.start(at);
+}
+function creak(ctx, out, at, dur) {
+  const len = Math.ceil(SR * dur), buf = ctx.createBuffer(1, len, SR), d = buf.getChannelData(0);
+  let t = 0;
+  while (t < dur) {
+    const p = t / dur, rate = 30 + 60 * Math.sin(Math.PI * p) + (Math.random() - 0.5) * 25;
+    const i0 = Math.floor(t * SR), amp = Math.sin(Math.PI * p) ** 0.6 * (0.6 + Math.random() * 0.4);
+    for (let k = 0; k < 90 && i0 + k < len; k++) d[i0 + k] += amp * Math.exp(-k / 14) * (Math.random() * 2 - 1);
+    t += 1 / Math.max(12, rate);
+  }
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  for (const [f, q, g] of [[520, 9, 1], [1180, 7, 0.6], [2400, 5, 0.25]]) {
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q;
+    const amp = ctx.createGain(); amp.gain.value = g * 3;
+    src.connect(bp).connect(amp).connect(out);
+  }
+  src.start(at);
+}
+// A neon tube struggling to light: mains hum chopped by electrical crackle
+function neonBuzz(ctx, out, at, dur) {
+  const hum = ctx.createOscillator(), band = ctx.createBiquadFilter(), gate = ctx.createGain();
+  hum.type = 'sawtooth'; hum.frequency.value = 100;
+  band.type = 'bandpass'; band.frequency.value = 900; band.Q.value = 1.2;
+  gate.gain.setValueAtTime(0, at);
+  for (let t = 0; t < dur; t += 0.03 + Math.random() * 0.06) gate.gain.setValueAtTime(Math.random() < 0.6 ? 0.5 + Math.random() * 0.5 : 0, at + t);
+  gate.gain.setValueAtTime(0, at + dur);
+  hum.connect(band).connect(gate).connect(out); hum.start(at); hum.stop(at + dur);
+  strike(ctx, out, at + 0.02, { modes: [[3200, 0.6, 0.01], [6400, 0.3, 0.006]], hp: 2500, burst: 0.002 });
+}
+function rustle(ctx, out, at, dur) {
+  const len = Math.ceil(SR * dur), buf = ctx.createBuffer(1, len, SR), d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) {
+    const p = i / len, flutter = 0.55 + 0.45 * Math.sin(i / SR * 2 * Math.PI * (9 + 6 * Math.sin(p * 7)));
+    d[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * p) * flutter;
+  }
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 3200; bp.Q.value = 0.6;
+  src.connect(bp).connect(out); src.start(at);
+}
+const EFFECTS = {
+  // The brass "click" of a lamp tumbler when a line is right
+  lamp: [0.5, (c, o) => { strike(c, o, 0, { modes: [[2350, 1, 0.12], [4150, 0.7, 0.09], [6900, 0.45, 0.06]], hp: 1800, burst: 0.002 }); strike(c, o, 0.05, { modes: [[3100, 0.6, 0.1], [5200, 0.4, 0.07]], hp: 2000, burst: 0.0015, body: 0.6 }); }],
+  latch: [0.45, (c, o) => { strike(c, o, 0, { modes: [[1900, 1, 0.09], [3600, 0.7, 0.07], [6100, 0.4, 0.05]], hp: 1500, burst: 0.002 }); strike(c, o, 0.08, { modes: [[130, 1, 0.12], [320, 0.6, 0.08], [760, 0.3, 0.04]], hp: 120, burst: 0.008 }); }],
+  creak: [2.0, (c, o) => creak(c, o, 0, 1.9)],
+  thud: [0.6, (c, o) => strike(c, o, 0, { modes: [[80, 1, 0.15], [210, 0.7, 0.09], [520, 0.35, 0.05]], hp: 50, burst: 0.012 })],
+  paper: [0.5, (c, o) => rustle(c, o, 0, 0.45)],
+  neon: [0.9, (c, o) => neonBuzz(c, o, 0, 0.85)],
+};
+const EFFECT_LEVEL = { lamp: 0.55, latch: 0.6, creak: 0.35, thud: 0.6, paper: 0.25, neon: 0.3 };
+const effects = {};
+Promise.all(Object.entries(EFFECTS).map(async ([key, [dur, build]]) => {
+  const ctx = new OfflineAudioContext(1, Math.ceil(SR * dur), SR);
+  build(ctx, ctx.destination);
+  const buf = await ctx.startRendering(), d = buf.getChannelData(0);
+  let peak = 0; for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i]));
+  if (peak) for (let i = 0; i < d.length; i++) d[i] /= peak;
+  effects[key] = buf;
+})).catch(() => {});
+function play(key, delay = 0, level = 1) {
+  if (CONFIG.volume <= 0 || !effects[key]) return;
+  const a = getAudio(), src = a.createBufferSource(), gain = a.createGain();
+  src.buffer = effects[key]; src.playbackRate.value = 0.96 + Math.random() * 0.08;
+  gain.gain.value = CONFIG.volume * EFFECT_LEVEL[key] * level;
+  src.connect(gain).connect(a.destination); src.start(a.currentTime + delay);
+}
+
+/* ===================== Background music after solving: Für Elise ===================== */
+// Beethoven (public domain), arranged for this piano: the theme with both hands, its repeat,
+// the C-major episode and the theme again. Unit = one sixteenth note; a bar of 3/8 is 6 units.
+function furElise() {
+  const ev = []; let t = 0;
+  const bar = (rh, lh = []) => {
+    for (const [o, n, l] of rh) ev.push([t + o, n, l, 0.5]);
+    for (const [o, n, l] of lh) ev.push([t + o, n, l, 0.32]);
+    t += 6;
+  };
+  const motif = () => bar([[0, 'E5', 1], [1, 'D#5', 1], [2, 'E5', 1], [3, 'B4', 1], [4, 'D5', 1], [5, 'C5', 1]]);
+  const am = rh => bar(rh, [[0, 'A2', 1], [1, 'E3', 1], [2, 'A3', 3]]);
+  const e7 = rh => bar(rh, [[0, 'E2', 1], [1, 'E3', 1], [2, 'G#3', 3]]);
+  const theme = ending => {
+    motif();
+    am([[0, 'A4', 2], [3, 'C4', 1], [4, 'E4', 1], [5, 'A4', 1]]);
+    e7([[0, 'B4', 2], [3, 'E4', 1], [4, 'G#4', 1], [5, 'B4', 1]]);
+    am([[0, 'C5', 2], [3, 'E4', 1], [4, 'E5', 1], [5, 'D#5', 1]]);
+    motif();
+    am([[0, 'A4', 2], [3, 'C4', 1], [4, 'E4', 1], [5, 'A4', 1]]);
+    e7([[0, 'B4', 2], [3, 'E4', 1], [4, 'C5', 1], [5, 'B4', 1]]);
+    ending();
+  };
+  ev.push([0, 'E5', 1, 0.5], [1, 'D#5', 1, 0.5]); t = 2;                       // upbeat
+  theme(() => am([[0, 'A4', 2], [4, 'E5', 1], [5, 'D#5', 1]]));               // first ending, back to the top
+  theme(() => am([[0, 'A4', 2], [3, 'B4', 1], [4, 'C5', 1], [5, 'D5', 1]]));  // second ending, into the episode
+  bar([[0, 'E5', 3], [3, 'G4', 1], [4, 'F5', 1], [5, 'E5', 1]], [[0, 'C3', 1], [1, 'G3', 1], [2, 'C4', 3]]);
+  bar([[0, 'D5', 3], [3, 'F4', 1], [4, 'E5', 1], [5, 'D5', 1]], [[0, 'G2', 1], [1, 'G3', 1], [2, 'B3', 3]]);
+  bar([[0, 'C5', 3], [3, 'E4', 1], [4, 'D5', 1], [5, 'C5', 1]], [[0, 'A2', 1], [1, 'E3', 1], [2, 'A3', 3]]);
+  bar([[0, 'B4', 2], [3, 'E4', 1], [4, 'E5', 2]], [[0, 'E2', 1], [1, 'E3', 1], [2, 'E4', 3]]);
+  bar([[0, 'E5', 1], [1, 'D#5', 1], [2, 'E5', 1], [3, 'D#5', 1], [4, 'E5', 1], [5, 'D#5', 1]]); // the trill leading home
+  theme(() => bar([[0, 'A4', 9]], [[0, 'A2', 9], [0, 'E3', 9], [0, 'A3', 9]]));                // final chord
+  return { events: ev, units: t };
+}
+const MUSIC = furElise(), BEAT = 0.22; // seconds per sixteenth: slow, like something winding down
+let music = null, ambience = null, soundOn = !store.get().soundOff;
+
+// After the door opens, Für Elise plays by itself on the haunted piano: slow, out of tune,
+// the bass an octave lower and murky, the pitch wobbling like an old tape, some notes a breath late.
+function startMusic() {
+  if (music || !soundOn || !samples.size || pianoOpen) return;
+  const a = getAudio(), { verb } = getFx();
+  const out = a.createGain(), echo = a.createGain();
+  out.connect(a.destination); echo.connect(verb);
+  out.gain.setValueAtTime(0, a.currentTime);
+  out.gain.linearRampToValueAtTime(0.4 * CONFIG.volume, a.currentTime + 4);       // creeps in
+  echo.gain.value = 0.9;
+  let timer = 0;
+  const playOnce = start => {
+    for (const [u, note, len, vel] of MUSIC.events) {
+      const bass = vel < 0.4, late = Math.random() < 0.07 ? 0.08 + Math.random() * 0.1 : 0;
+      const at = start + u * BEAT + late, dur = len * BEAT;
+      const name = bass ? note.replace(/\d$/, d => String(Number(d) - 1)) : note;  // the left hand an octave lower
+      const v = hauntedVoice(a, name, at, vel * (0.85 + Math.random() * 0.15), { warble: 0.006 });
+      v.gain.disconnect(); v.gain.connect(out); v.gain.connect(echo);
+      v.gain.gain.setValueAtTime(v.gain.gain.value, at);
+      v.gain.gain.setTargetAtTime(0, at + dur + 0.4, 0.8);
+      for (const s of v.srcs) s.stop(at + dur + 5);
+    }
+    timer = setTimeout(() => playOnce(a.currentTime + 0.1), (MUSIC.units * BEAT + 6) * 1000); // a long silence, then again
+  };
+  playOnce(a.currentTime + 0.6);
+  music = {
+    stop() {
+      clearTimeout(timer);
+      out.gain.cancelScheduledValues(a.currentTime); out.gain.setTargetAtTime(0, a.currentTime, 0.6);
+      echo.gain.setTargetAtTime(0, a.currentTime, 0.6);
+      setTimeout(() => { out.disconnect(); echo.disconnect(); }, 3500);
+      music = null;
+    },
+  };
+}
+const stopMusic = () => music?.stop();
+
+// The house breathes: a low dissonant drone, wind in the walls, and now and then a creak,
+// a distant knock, or two notes of the tune played by no one.
+function brownNoise(a, seconds) {
+  const len = Math.ceil(a.sampleRate * seconds), buf = a.createBuffer(1, len, a.sampleRate), d = buf.getChannelData(0);
+  let last = 0;
+  for (let i = 0; i < len; i++) { last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02; d[i] = last * 3.5; }
+  return buf;
+}
+function ghostNotes() {
+  if (!samples.size || pianoOpen) return;
+  const a = getAudio(), phrases = [['E5', 'D#5'], ['E5', 'D#5', 'E5'], ['B4'], ['A4']];
+  const phrase = phrases[Math.floor(Math.random() * phrases.length)];
+  phrase.forEach((note, i) => {
+    const at = a.currentTime + i * 0.55, v = hauntedVoice(a, note, at, 0.14 * CONFIG.volume, { send: 1.4, warble: 0.008 });
+    v.gain.gain.setTargetAtTime(0, at + 0.6, 1.2);
+    for (const s of v.srcs) s.stop(at + 6);
+  });
+}
+function startAmbience() {
+  if (ambience || !soundOn) return;
+  const a = getAudio(), { verb } = getFx();
+  const bus = a.createGain(), send = a.createGain();
+  bus.gain.setValueAtTime(0, a.currentTime);
+  bus.gain.linearRampToValueAtTime(0.5 * CONFIG.volume, a.currentTime + 5);
+  send.gain.value = 0.4;
+  bus.connect(a.destination); bus.connect(send).connect(verb);
+  // Drone: low tones a semitone apart, beating against each other, behind a slowly breathing filter
+  const lp = a.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 240; lp.connect(bus);
+  const breath = a.createOscillator(), breathDepth = a.createGain();
+  breath.frequency.value = 0.05; breathDepth.gain.value = 110; breath.connect(breathDepth).connect(lp.frequency);
+  const tones = [[55, 'sawtooth', 0.045], [58.27, 'sawtooth', 0.035], [27.5, 'sine', 0.14], [82.41, 'triangle', 0.018]].map(([f, type, g]) => {
+    const o = a.createOscillator(), og = a.createGain();
+    o.type = type; o.frequency.value = f; og.gain.value = g; o.connect(og).connect(lp);
+    return o;
+  });
+  // Wind through the walls
+  const wind = a.createBufferSource(), band = a.createBiquadFilter(), windGain = a.createGain();
+  wind.buffer = brownNoise(a, 8); wind.loop = true;
+  band.type = 'bandpass'; band.frequency.value = 480; band.Q.value = 0.9; windGain.gain.value = 0.55;
+  wind.connect(band).connect(windGain).connect(bus);
+  const gust = a.createOscillator(), gustDepth = a.createGain();
+  gust.frequency.value = 0.07; gustDepth.gain.value = 280; gust.connect(gustDepth).connect(band.frequency);
+  const all = [breath, gust, wind, ...tones];
+  all.forEach(n => n.start());
+  // Something in the house, every 7 to 18 seconds
+  let timer = 0;
+  const event = () => {
+    const r = Math.random();
+    if (r < 0.35) play('creak', 0, 0.6); else if (r < 0.55) play('thud', 0, 0.45); else ghostNotes();
+    timer = setTimeout(event, 7000 + Math.random() * 11000);
+  };
+  timer = setTimeout(event, 6000);
+  ambience = {
+    stop() {
+      clearTimeout(timer);
+      bus.gain.cancelScheduledValues(a.currentTime); bus.gain.setTargetAtTime(0, a.currentTime, 0.6);
+      setTimeout(() => { all.forEach(n => n.stop()); bus.disconnect(); }, 3500);
+      ambience = null;
+    },
+  };
+}
+
+/* ===================== The room (3D) ===================== */
+const canvas = $('gl');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.92;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#070504');
+scene.fog = new THREE.FogExp2(0x070504, 0.06); // the far corners sink into darkness
+const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 40);
+
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+(async () => {
+  for (const url of assetUrls('assets/room.hdr')) {
+    try {
+      const hdr = await new RGBELoader().loadAsync(url);
+      scene.environment = pmrem.fromEquirectangular(hdr).texture; hdr.dispose(); return;
+    } catch { /* try the next place */ }
+  }
+})();
+
+const texLoader = new THREE.TextureLoader();
+async function loadTexture(name, color, repeat = [1, 1]) {
+  for (const url of assetUrls('assets/' + name)) {
+    try {
+      const t = await texLoader.loadAsync(url);
+      t.colorSpace = color ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+      t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(...repeat);
+      t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      return t;
+    } catch { /* try the next place */ }
+  }
+  return null;
+}
+async function pbr(base, repeat, extra = {}) {
+  const [map, normalMap, roughnessMap] = await Promise.all([
+    loadTexture(`${base}-color.jpg`, true, repeat), loadTexture(`${base}-normal.jpg`, false, repeat), loadTexture(`${base}-rough.jpg`, false, repeat),
+  ]);
+  return new THREE.MeshStandardMaterial({ map, normalMap, roughnessMap, roughness: 0.9, envMapIntensity: 0.4, ...extra });
+}
+const [wallMat, floorMat, darkWood] = await Promise.all([
+  pbr('wall', [2.5, 1.2], { color: 0x5a4a40, envMapIntensity: 0.22 }),
+  pbr('floor', [2.2, 2.2], { color: 0x6a5446, envMapIntensity: 0.3 }),
+  pbr('table', [1, 1], { color: 0x6e5a50, roughness: 0.6 }),
+]);
+const lacquer = new THREE.MeshPhysicalMaterial({ color: 0x080808, roughness: 0.18, clearcoat: 1, clearcoatRoughness: 0.06, envMapIntensity: 1.1 });
+const brass = new THREE.MeshStandardMaterial({ color: 0xc9a45c, metalness: 1, roughness: 0.32, envMapIntensity: 1.1 });
+const ivory = new THREE.MeshStandardMaterial({ color: 0xf1ebdc, roughness: 0.35, envMapIntensity: 0.6 });
+const ebony = new THREE.MeshStandardMaterial({ color: 0x0c0c0c, roughness: 0.3, envMapIntensity: 0.8 });
+
+const shadowed = m => { m.castShadow = m.receiveShadow = true; return m; };
+const box = (w, h, d, mat, x, y, z, parent, r = 0.006) => {
+  const m = shadowed(new THREE.Mesh(r ? new RoundedBoxGeometry(w, h, d, 2, Math.min(r, w / 2, h / 2, d / 2)) : new THREE.BoxGeometry(w, h, d), mat));
+  m.position.set(x, y, z); parent.add(m); return m;
+};
+function canvasTexture(w, h, draw) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  return t;
+}
+
+// Shell: floor, back wall with a doorway, side walls, ceiling
+const ROOM = { w: 7, d: 5.5, h: 3 };
+const BACK = -2, DOOR_X = -2.0, DOOR_W = 0.96, DOOR_H = 2.12;
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(ROOM.w, ROOM.d + 3), floorMat);
+floor.rotation.x = -Math.PI / 2; floor.position.z = 0.5; floor.receiveShadow = true; scene.add(floor);
+const wallPiece = (x0, x1, y0, y1) => {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, y1 - y0), wallMat);
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, BACK); m.receiveShadow = true; scene.add(m);
+};
+wallPiece(-ROOM.w / 2, DOOR_X - DOOR_W / 2, 0, ROOM.h);
+wallPiece(DOOR_X + DOOR_W / 2, ROOM.w / 2, 0, ROOM.h);
+wallPiece(DOOR_X - DOOR_W / 2, DOOR_X + DOOR_W / 2, DOOR_H, ROOM.h);
+for (const side of [-1, 1]) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(ROOM.d, ROOM.h), wallMat);
+  m.rotation.y = -side * Math.PI / 2; m.position.set(side * ROOM.w / 2, ROOM.h / 2, BACK + ROOM.d / 2); m.receiveShadow = true; scene.add(m);
+}
+const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(ROOM.w, ROOM.d), new THREE.MeshStandardMaterial({ color: 0x1a1512, roughness: 1 }));
+ceiling.rotation.x = Math.PI / 2; ceiling.position.set(0, ROOM.h, BACK + ROOM.d / 2); scene.add(ceiling);
+box(ROOM.w, 0.12, 0.02, darkWood, 0, 0.06, BACK + 0.01, scene, 0); // skirting board
+
+// Old-house grandeur: dark wood panelling up to a chair rail, and a crown moulding under the ceiling
+const panelDark = darkWood.clone(); panelDark.color = new THREE.Color(0x4e3e36);
+for (const [x0, x1] of [[-ROOM.w / 2, DOOR_X - DOOR_W / 2 - 0.1], [DOOR_X + DOOR_W / 2 + 0.1, ROOM.w / 2]]) {
+  const w = x1 - x0, cx = (x0 + x1) / 2;
+  box(w, 1.0, 0.025, darkWood, cx, 0.5, BACK + 0.012, scene, 0);
+  box(w, 0.05, 0.05, darkWood, cx, 1.02, BACK + 0.025, scene, 0.01);      // chair rail
+  const count = Math.max(1, Math.round(w / 0.62)), step = w / count;
+  for (let i = 0; i < count; i++) box(step - 0.14, 0.68, 0.015, panelDark, x0 + step * (i + 0.5), 0.52, BACK + 0.03, scene, 0.006);
+}
+box(ROOM.w, 0.14, 0.07, darkWood, 0, ROOM.h - 0.07, BACK + 0.035, scene, 0.01); // crown moulding
+
+// Light: one warm lamp falls on the piano and leaves the rest of the room in shadow;
+// a cold moonlight edges things from the side; candles and a picture light add small warm pools
+scene.add(new THREE.HemisphereLight(0xc8b8a8, 0x0a0705, 0.1));
+const ceilingLamp = new THREE.SpotLight(0xffcf96, 3.4, 0, 0.55, 0.9, 0);
+ceilingLamp.position.set(0.25, ROOM.h - 0.05, -0.4);
+ceilingLamp.target.position.set(0.25, 0.7, BACK + 0.2);
+ceilingLamp.castShadow = true; ceilingLamp.shadow.mapSize.setScalar(touch ? 1024 : 2048);
+ceilingLamp.shadow.bias = -0.0005; ceilingLamp.shadow.normalBias = 0.02; ceilingLamp.shadow.radius = 5;
+scene.add(ceilingLamp, ceilingLamp.target);
+const moon = new THREE.DirectionalLight(0x7d93c8, 0.75); moon.position.set(5, 3, 1.5); scene.add(moon);
+const moonLeft = new THREE.DirectionalLight(0x7d93c8, 0.35); moonLeft.position.set(-4, 2.5, 2.5); scene.add(moonLeft); // just enough to find the door
+
+// Dust drifting in the lamp's beam
+const dust = (() => {
+  const n = touch ? 140 : 260, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { pos[i * 3] = 0.25 + (Math.random() - 0.5) * 1.6; pos[i * 3 + 1] = 0.4 + Math.random() * 2.4; pos[i * 3 + 2] = BACK + 0.3 + Math.random() * 1.9; }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const sprite = canvasTexture(32, 32, (g, w) => { const r = g.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2); r.addColorStop(0, 'rgba(255,230,190,1)'); r.addColorStop(1, 'rgba(255,230,190,0)'); g.fillStyle = r; g.fillRect(0, 0, w, w); });
+  const pts = new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.012, map: sprite, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending }));
+  scene.add(pts); return pts;
+})();
+
+// A worn Persian rug under the piano: deep crimson field, navy border, faded medallion
+{
+  const rug = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 1.8), new THREE.MeshStandardMaterial({ roughness: 1, envMapIntensity: 0.1, map: canvasTexture(1000, 720, (g, w, h) => {
+    g.fillStyle = '#4a0f12'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#1a2340'; g.lineWidth = 46; g.strokeRect(23, 23, w - 46, h - 46);
+    g.strokeStyle = '#a07a3a'; g.lineWidth = 4; for (const k of [50, 64, 90]) g.strokeRect(k, k, w - 2 * k, h - 2 * k);
+    g.fillStyle = '#a07a3a';
+    for (let x = 60; x < w - 50; x += 26) for (const y of [36, h - 36]) { g.beginPath(); g.moveTo(x, y - 8); g.lineTo(x + 8, y); g.lineTo(x, y + 8); g.lineTo(x - 8, y); g.fill(); }
+    g.save(); g.translate(w / 2, h / 2);
+    for (const [n, rr, len, col] of [[18, 200, 60, '#1a2340'], [14, 130, 46, '#a07a3a'], [10, 66, 34, '#6a1a18']]) {
+      g.fillStyle = col; for (let i = 0; i < n; i++) { g.save(); g.rotate(i / n * Math.PI * 2); g.beginPath(); g.ellipse(0, -rr, len * 0.3, len * 0.55, 0, 0, Math.PI * 2); g.fill(); g.restore(); }
+    }
+    g.restore();
+    const img = g.getImageData(0, 0, w, h);
+    for (let i = 0; i < img.data.length; i += 4) { const n = (Math.random() - 0.5) * 26; img.data[i] += n; img.data[i + 1] += n; img.data[i + 2] += n; }
+    g.putImageData(img, 0, 0);
+    const wear = g.createRadialGradient(w / 2, h / 2, h * 0.2, w / 2, h / 2, w * 0.6); wear.addColorStop(0, 'rgba(200,170,140,0.12)'); wear.addColorStop(1, 'rgba(0,0,0,0.3)');
+    g.fillStyle = wear; g.fillRect(0, 0, w, h);
+  }) }));
+  rug.rotation.x = -Math.PI / 2; rug.position.set(0.25, 0.004, BACK + 1.05); rug.receiveShadow = true; scene.add(rug);
+}
+
+/* ---- Door (hotspot: door) ---- */
+const doorGroup = new THREE.Group(); scene.add(doorGroup);
+for (const [w, h, x, y] of [[0.09, DOOR_H + 0.09, DOOR_X - DOOR_W / 2 - 0.045, (DOOR_H + 0.09) / 2], [0.09, DOOR_H + 0.09, DOOR_X + DOOR_W / 2 + 0.045, (DOOR_H + 0.09) / 2], [DOOR_W + 0.18, 0.09, DOOR_X, DOOR_H + 0.045]]) {
+  box(w, h, 0.06, darkWood, x, y, BACK + 0.03, doorGroup); // casing
+}
+// Light behind the door, seen only when it opens
+const beyond = new THREE.Mesh(new THREE.PlaneGeometry(DOOR_W, DOOR_H), new THREE.MeshBasicMaterial({ color: 0xffd28a, toneMapped: false })); // a bright warm glow, not grey
+beyond.position.set(DOOR_X, DOOR_H / 2, BACK - 0.25); scene.add(beyond);
+const doorway = new THREE.SpotLight(0xffd79a, 0, 0, 0.7, 0.9, 0);
+doorway.position.set(DOOR_X, 1.6, BACK - 0.3); doorway.target.position.set(DOOR_X + 0.5, 0, 0.5); scene.add(doorway, doorway.target);
+const hinge = new THREE.Group(); hinge.position.set(DOOR_X - DOOR_W / 2, 0, BACK); doorGroup.add(hinge);
+const doorSlab = box(DOOR_W - 0.01, DOOR_H - 0.01, 0.05, darkWood, DOOR_W / 2, DOOR_H / 2, 0, hinge, 0.008);
+for (const [y, h] of [[1.55, 0.62], [0.55, 0.62]]) box(0.66, h, 0.02, darkWood, DOOR_W / 2, y, 0.033, hinge, 0.01); // raised panels
+const knob = new THREE.Mesh(new THREE.SphereGeometry(0.035, 24, 16), brass); knob.position.set(DOOR_W - 0.1, 1.0, 0.07); shadowed(knob); hinge.add(knob);
+const keyhole = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.11, 0.006), brass); keyhole.position.set(DOOR_W - 0.1, 0.9, 0.03); hinge.add(keyhole);
+// Four brass lamps above the door: the progress tumblers
+const lamps = [];
+for (let i = 0; i < 4; i++) {
+  const x = DOOR_X + (i - 1.5) * 0.17, y = DOOR_H + 0.26;
+  const cap = box(0.07, 0.03, 0.05, brass, x, y + 0.05, BACK + 0.03, scene, 0.01);
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.038, 20, 14), new THREE.MeshStandardMaterial({ color: 0x3a3022, emissive: 0xffb84a, emissiveIntensity: 0, roughness: 0.3 }));
+  bulb.position.set(x, y, BACK + 0.05); scene.add(bulb);
+  const glow = new THREE.PointLight(0xffb860, 0, 1.6, 2); glow.position.set(x, y, BACK + 0.2); scene.add(glow);
+  lamps.push({ bulb, glow, cap });
+}
+
+/* ---- Painting (hotspot: painting) ---- */
+// An oil painting of Amman's hills at dusk. Nine white stone houses sit on the ridge: the higher the house,
+// the higher the note, and the first note is the house on the RIGHT (CONFIG.painting). Everything else is scenery.
+function drawPainting(g, w, h) {
+  let seed = 11; const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const stroke = (x, y, len, width, color, angle = 0) => {
+    g.strokeStyle = color; g.lineWidth = width; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(angle) * len, y + Math.sin(angle) * len); g.stroke();
+  };
+  // Dusk sky: deep blue above, warm apricot at the horizon
+  const sky = g.createLinearGradient(0, 0, 0, h * 0.75);
+  sky.addColorStop(0, '#3f5577'); sky.addColorStop(0.45, '#9a8aa0'); sky.addColorStop(0.75, '#e9b787'); sky.addColorStop(1, '#f4d3a2');
+  g.fillStyle = sky; g.fillRect(0, 0, w, h);
+  const sun = g.createRadialGradient(w * 0.7, h * 0.52, 0, w * 0.7, h * 0.52, w * 0.35);
+  sun.addColorStop(0, 'rgba(255,226,170,0.85)'); sun.addColorStop(1, 'rgba(255,226,170,0)');
+  g.fillStyle = sun; g.fillRect(0, 0, w, h);
+  // Sky brushwork and soft clouds
+  for (let i = 0; i < 900; i++) {
+    const y = r() * h * 0.6, warm = y / (h * 0.6);
+    stroke(r() * w, y, 20 + r() * 60, 3 + r() * 7, `rgba(${200 + warm * 50},${170 + warm * 40},${170 - warm * 30},${0.05 + r() * 0.06})`, (r() - 0.5) * 0.15);
+  }
+  for (let c = 0; c < 5; c++) {
+    const cx = r() * w, cy = h * (0.1 + r() * 0.25);
+    for (let i = 0; i < 40; i++) stroke(cx + (r() - 0.5) * w * 0.18, cy + (r() - 0.5) * h * 0.04, 30 + r() * 60, 6 + r() * 8, `rgba(255,${220 + r() * 20},${200 + r() * 30},0.08)`, (r() - 0.5) * 0.1);
+  }
+  // Two layers of distant hills, hazier the further they are
+  const ridgeLine = (base, amp, freq, phase, color) => {
+    g.beginPath(); g.moveTo(0, h);
+    for (let x = 0; x <= w; x += w / 120) g.lineTo(x, base + Math.sin(x * freq + phase) * amp + Math.sin(x * freq * 2.7 + phase) * amp * 0.35);
+    g.lineTo(w, h); g.closePath(); g.fillStyle = color; g.fill();
+  };
+  ridgeLine(h * 0.5, h * 0.04, 0.006, 1.2, 'rgba(140,120,140,0.55)');
+  ridgeLine(h * 0.58, h * 0.035, 0.009, 3.1, 'rgba(150,115,100,0.6)');
+
+  // The ridge with the nine houses
+  const drops = CONFIG.painting, n = drops.length, maxDrop = Math.max(...drops);
+  const left = w * 0.12, right = w * 0.88, top = h * 0.3, bottom = h * 0.6;
+  const pts = drops.map((dp, i) => ({ x: right - (i / (n - 1)) * (right - left), y: top + (dp / maxDrop) * (bottom - top) }));
+  const ridge = [...pts].sort((a, b) => a.x - b.x);
+  g.beginPath(); g.moveTo(0, h); g.lineTo(0, ridge[0].y + h * 0.12);
+  ridge.forEach((p, i) => {
+    const prev = ridge[i - 1] ?? { x: 0, y: p.y + h * 0.12 };
+    g.quadraticCurveTo((prev.x + p.x) / 2, (prev.y + p.y) / 2 + h * 0.015, p.x, p.y + h * 0.02);
+  });
+  g.lineTo(w, ridge.at(-1).y + h * 0.1); g.lineTo(w, h); g.closePath();
+  const hill = g.createLinearGradient(0, top, 0, h);
+  hill.addColorStop(0, '#b78a5c'); hill.addColorStop(0.5, '#8c6440'); hill.addColorStop(1, '#4e3522');
+  g.fillStyle = hill; g.fill();
+  g.save(); g.clip(); // brush texture of earth, rock and dry grass, only inside the hill
+  for (let i = 0; i < 2600; i++) {
+    const shade = r();
+    stroke(r() * w, top + r() * (h - top), 6 + r() * 22, 2 + r() * 5,
+      shade > 0.6 ? `rgba(214,176,120,${0.1 + r() * 0.12})` : shade > 0.25 ? `rgba(110,78,48,${0.1 + r() * 0.12})` : `rgba(120,120,70,${0.08 + r() * 0.1})`,
+      (r() - 0.5) * 0.6);
+  }
+  g.restore();
+
+  // Amman houses: white limestone cubes with flat roofs and warm lit windows, light from the right
+  const s = w * 0.024;
+  for (const p of pts) {
+    const bx = p.x - s, by = p.y - s * 1.6;
+    g.fillStyle = 'rgba(40,25,15,0.35)'; g.fillRect(bx - s * 0.5, p.y + h * 0.012, s * 2.6, s * 0.35);   // ground shadow
+    g.fillStyle = '#b9ab92'; g.fillRect(bx - s * 0.45, by + s * 0.18, s * 0.45, s * 1.7);               // shaded side
+    const face = g.createLinearGradient(bx, by, bx + s * 2, by);
+    face.addColorStop(0, '#e6dcc6'); face.addColorStop(1, '#f7efdc');
+    g.fillStyle = face; g.fillRect(bx, by, s * 2, s * 1.9);                                                // lit front
+    g.fillStyle = '#d3c6aa'; g.fillRect(bx - s * 0.1, by - s * 0.14, s * 2.2, s * 0.16);                  // roof edge
+    for (const [wx, wy] of [[0.3, 0.45], [1.15, 0.45], [0.3, 1.15]]) {
+      g.fillStyle = 'rgba(255,190,90,0.35)'; g.fillRect(bx + wx * s - s * 0.08, by + wy * s - s * 0.08, s * 0.66, s * 0.56);
+      g.fillStyle = '#ffcf6e'; g.fillRect(bx + wx * s, by + wy * s, s * 0.5, s * 0.4);
+    }
+    g.fillStyle = '#5a3c26'; g.fillRect(bx + s * 1.25, by + s * 1.05, s * 0.42, s * 0.85);                 // door
+  }
+
+  // Canvas weave, varnish and an aged edge
+  g.globalAlpha = 0.05; g.fillStyle = '#000';
+  for (let y = 0; y < h; y += 3) g.fillRect(0, y, w, 1);
+  for (let x = 0; x < w; x += 3) g.fillRect(x, 0, 1, h);
+  g.globalAlpha = 1;
+  const varnish = g.createRadialGradient(w / 2, h / 2, h * 0.3, w / 2, h / 2, h * 0.95);
+  varnish.addColorStop(0, 'rgba(255,220,160,0.05)'); varnish.addColorStop(1, 'rgba(60,35,10,0.45)');
+  g.fillStyle = varnish; g.fillRect(0, 0, w, h);
+}
+const PAINT = { x: 0.25, y: 2.08, w: 1.05, h: 0.66 };
+const paintingGroup = new THREE.Group(); scene.add(paintingGroup);
+box(PAINT.w, PAINT.h, 0.05, brass, PAINT.x, PAINT.y, BACK + 0.03, paintingGroup, 0.012).material = new THREE.MeshStandardMaterial({ color: 0xb8913f, metalness: 0.8, roughness: 0.45 });
+const canvasArt = new THREE.Mesh(new THREE.PlaneGeometry(PAINT.w - 0.12, PAINT.h - 0.12), new THREE.MeshStandardMaterial({ map: canvasTexture(1024, 640, drawPainting), roughness: 0.75, envMapIntensity: 0.3 }));
+canvasArt.position.set(PAINT.x, PAINT.y, BACK + 0.058); paintingGroup.add(canvasArt);
+const smallPlaque = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.06, 0.006), [brass, brass, brass, brass, new THREE.MeshStandardMaterial({
+  map: canvasTexture(768, 116, (g, w, h) => {
+    g.fillStyle = '#2e2214'; g.fillRect(0, 0, w, h); g.strokeStyle = '#c9a45c'; g.lineWidth = 6; g.strokeRect(6, 6, w - 12, h - 12);
+    g.direction = RTL ? 'rtl' : 'ltr'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#e9d39a';
+    g.font = RTL ? '700 50px "Amiri"' : '34px "Special Elite"';
+    g.fillText(T.painting.plaque, w / 2, h / 2 + 2);
+  }), roughness: 0.4, metalness: 0.4 }), brass]);
+smallPlaque.position.set(PAINT.x, PAINT.y - PAINT.h / 2 - 0.07, BACK + 0.02); paintingGroup.add(smallPlaque);
+
+/* ---- Neon sign: shows the current language; click it to switch (hotspot: lang) ---- */
+const NEON = { x: -0.9, y: 2.12, word: { en: 'English', ar: 'عربي' }, color: '#ff2a4a' };
+function drawNeon(g, w, h, word, lit) {
+  g.clearRect(0, 0, w, h);
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.direction = word === NEON.word.ar ? 'rtl' : 'ltr';
+  g.font = word === NEON.word.ar ? '500 170px "Reem Kufi"' : '200px "Neonderthaw"';
+  if (!lit) { // unlit glass tubes
+    g.lineWidth = 7; g.strokeStyle = 'rgba(150,80,90,0.55)'; g.strokeText(word, w / 2, h / 2);
+    return;
+  }
+  for (const [blur, alpha] of [[60, 0.9], [30, 1], [12, 1]]) { // wide glow, then the hot tube
+    g.shadowColor = NEON.color; g.shadowBlur = blur;
+    g.fillStyle = `rgba(255,70,100,${alpha})`; g.fillText(word, w / 2, h / 2);
+  }
+  g.shadowBlur = 6; g.shadowColor = '#fff'; g.fillStyle = '#ffd6de'; g.fillText(word, w / 2, h / 2);
+}
+const neonGroup = new THREE.Group(); scene.add(neonGroup);
+box(0.62, 0.28, 0.02, new THREE.MeshPhysicalMaterial({ color: 0x0a0a0c, roughness: 0.15, clearcoat: 1, transparent: true, opacity: 0.85 }), NEON.x, NEON.y, BACK + 0.02, neonGroup, 0.01); // acrylic backboard
+for (const dx of [-0.27, 0.27]) box(0.02, 0.02, 0.05, brass, NEON.x + dx, NEON.y + 0.12, BACK + 0.03, neonGroup, 0.004);        // stand-offs
+const neonTex = canvasTexture(1024, 400, (g, w, h) => drawNeon(g, w, h, NEON.word[LANG], true));
+const neonSign = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.234), new THREE.MeshBasicMaterial({ map: neonTex, transparent: true, toneMapped: false, depthWrite: false }));
+neonSign.position.set(NEON.x, NEON.y, BACK + 0.035); neonGroup.add(neonSign);
+const neonGlow = new THREE.PointLight(0xff2a4a, 0.6, 1.8, 2); neonGlow.position.set(NEON.x, NEON.y, BACK + 0.35); scene.add(neonGlow);
+const setNeon = (word, lit) => { drawNeon(neonTex.image.getContext('2d'), 1024, 400, word, lit); neonTex.needsUpdate = true; neonGlow.intensity = lit ? 0.6 : 0; };
+let neonBusy = false;
+
+// The address of the same page in the other language: previews use ?lang=ar, the live site /ar/ in front
+function otherLanguageUrl() {
+  const url = new URL(location.href);
+  if (LANG === 'en') {
+    if (url.pathname.startsWith('/puzzle-preview/')) url.searchParams.set('lang', 'ar');
+    else url.pathname = '/ar' + url.pathname;
+  } else {
+    url.searchParams.delete('lang');
+    url.pathname = url.pathname.replace(/^\/ar(?=\/|$)/, '') || '/';
+  }
+  return url.href;
+}
+// Click: the tube buzzes and dies, comes back as the other language, then the page follows
+function switchLanguage() {
+  if (neonBusy) return;
+  neonBusy = true;
+  const other = NEON.word[LANG === 'en' ? 'ar' : 'en'];
+  play('neon');
+  const steps = [[0, NEON.word[LANG], false], [220, other, true]];
+  steps.forEach(([ms, word, lit]) => setTimeout(() => setNeon(word, lit), ms));
+  setTimeout(() => {
+    gsap.to('body', { opacity: 0, duration: 0.45, ease: 'power1.in', onComplete: () => location.assign(otherLanguageUrl()) });
+  }, 900);
+}
+
+/* ---- Upright piano + bench (hotspot: piano) ---- */
+const pianoGroup = new THREE.Group(); pianoGroup.position.set(0.25, 0, BACK + 0.32); scene.add(pianoGroup);
+box(1.52, 1.28, 0.56, lacquer, 0, 0.64, 0, pianoGroup, 0.02);                // case
+box(1.52, 0.06, 0.34, lacquer, 0, 0.73, 0.42, pianoGroup, 0.01);             // key bed
+for (const x of [-0.72, 0.72]) { box(0.08, 0.14, 0.36, lacquer, x, 0.82, 0.42, pianoGroup, 0.01); box(0.07, 0.7, 0.07, lacquer, x, 0.35, 0.52, pianoGroup, 0.01); }
+box(1.36, 0.1, 0.03, lacquer, 0, 0.86, 0.27, pianoGroup, 0.005);             // fallboard edge
+box(0.95, 0.24, 0.025, lacquer, 0, 1.05, 0.29, pianoGroup, 0.005).rotation.x = -0.12; // music desk
+{ // 36 white keys and their black keys
+  const n = 36, kw = 1.34 / n;
+  for (let i = 0; i < n; i++) box(kw * 0.92, 0.022, 0.15, ivory, -0.67 + kw * (i + 0.5), 0.775, 0.5, pianoGroup, 0.002);
+  for (let i = 0; i < n - 1; i++) if ([0, 1, 3, 4, 5].includes(i % 7)) box(kw * 0.55, 0.03, 0.095, ebony, -0.67 + kw * (i + 1), 0.795, 0.465, pianoGroup, 0.002);
+}
+const bench = new THREE.Group(); bench.position.set(0.25, 0, BACK + 1.25); scene.add(bench);
+box(0.85, 0.06, 0.36, lacquer, 0, 0.5, 0, bench, 0.012);
+for (const [x, z] of [[-0.38, -0.14], [0.38, -0.14], [-0.38, 0.14], [0.38, 0.14]]) box(0.05, 0.47, 0.05, lacquer, x, 0.235, z, bench, 0.008);
+
+// Two candles in brass holders on the piano, their flames flickering
+const candles = [];
+for (const x of [-0.58, 0.58]) {
+  const holder = new THREE.Group(); holder.position.set(x, 1.28, 0.05); pianoGroup.add(holder);
+  const base = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.07, 0.025, 32), brass)); base.position.y = 0.0125;
+  const stem = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.02, 0.13, 20), brass)); stem.position.y = 0.09;
+  const cup = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.022, 0.025, 24), brass)); cup.position.y = 0.165;
+  const wax = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.019, 0.019, 0.16, 20), new THREE.MeshStandardMaterial({ color: 0xefe6d2, roughness: 0.55, emissive: 0x3a2008, emissiveIntensity: 0.6 })));
+  wax.position.y = 0.257;
+  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.009, 0.04, 16), new THREE.MeshBasicMaterial({ color: 0xffc46a, toneMapped: false }));
+  flame.position.y = 0.36;
+  const glow = new THREE.PointLight(0xff9a3c, 0.55, 2.4, 2); glow.position.y = 0.4;
+  holder.add(base, stem, cup, wax, flame, glow);
+  candles.push({ flame, glow, seed: Math.random() * 100 });
+}
+
+// A brass picture light over the painting
+{
+  const PAINT_LIGHT = { x: PAINT.x, y: PAINT.y + PAINT.h / 2 + 0.07 };
+  const bar = box(0.5, 0.03, 0.05, brass, PAINT_LIGHT.x, PAINT_LIGHT.y, BACK + 0.12, scene, 0.012);
+  bar.castShadow = false;
+  const pictureLight = new THREE.SpotLight(0xffd6a0, 1.6, 2.2, 0.75, 0.8, 1.5);
+  pictureLight.position.set(PAINT_LIGHT.x, PAINT_LIGHT.y - 0.02, BACK + 0.16);
+  pictureLight.target.position.set(PAINT_LIGHT.x, PAINT_LIGHT.y - 0.55, BACK);
+  scene.add(pictureLight, pictureLight.target);
+}
+
+/* ---- Bookshelf (hotspot: library) ---- */
+const shelf = new THREE.Group(); shelf.position.set(2.45, 0, BACK + 0.2); scene.add(shelf);
+for (const x of [-0.62, 0.62]) box(0.04, 2.25, 0.38, darkWood, x, 1.125, 0, shelf, 0.006);
+box(1.28, 2.25, 0.02, darkWood, 0, 1.125, -0.18, shelf, 0);
+const SHELF_Y = [0.06, 0.55, 1.04, 1.53, 2.02, 2.25];
+for (const y of SHELF_Y) box(1.2, 0.035, 0.36, darkWood, 0, y, 0, shelf, 0.004);
+const spineTex = canvasTexture(64, 256, (g, w, h) => {
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h);
+  g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(0, 0, 4, h); g.fillRect(w - 4, 0, 4, h);
+  g.fillStyle = '#d9b46a'; for (const y of [26, 34, h - 40, h - 32]) g.fillRect(6, y, w - 12, 3);
+  g.fillRect(14, 70, w - 28, 50);
+});
+const books = []; // [x, y, w, h, d]
+{
+  let seed = 7; const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let s = 0; s < 4; s++) {
+    let x = -0.57;
+    while (x < 0.55) {
+      const w = 0.035 + r() * 0.03, h = 0.3 + r() * 0.13;
+      if (x + w > 0.57) break;
+      books.push([x + w / 2, SHELF_Y[s] + 0.018 + h / 2, w, h, 0.24 + r() * 0.06, r()]);
+      x += w + 0.002;
+    }
+  }
+}
+const SPECIAL = Math.floor(books.length * 0.42); // the book that hides the sheet
+const bookColors = [0x5a1f1a, 0x2e3b2a, 0x1f2a44, 0x6b4a22, 0x3b2a1e, 0x4a1e2e, 0x2a2a2a, 0x7a5a2a];
+const bookMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ map: spineTex, roughness: 0.7, envMapIntensity: 0.4 }), books.length - 1);
+bookMesh.castShadow = bookMesh.receiveShadow = true;
+{
+  const m = new THREE.Matrix4(), c = new THREE.Color(); let k = 0;
+  books.forEach(([x, y, w, h, d, rr], i) => {
+    if (i === SPECIAL) return;
+    m.compose(new THREE.Vector3(x, y, -0.02 + d / 2 - 0.15), new THREE.Quaternion(), new THREE.Vector3(w, h, d));
+    bookMesh.setMatrixAt(k, m); bookMesh.setColorAt(k, c.setHex(bookColors[Math.floor(rr * bookColors.length)])); k++;
+  });
+}
+shelf.add(bookMesh);
+const [sx, sy, sw, sh, sd] = books[SPECIAL];
+const specialBook = shadowed(new THREE.Mesh(new THREE.BoxGeometry(sw * 1.15, sh, sd), new THREE.MeshStandardMaterial({ map: spineTex, color: 0x6b2a12, emissive: 0xffa040, emissiveIntensity: 0, roughness: 0.6 })));
+specialBook.position.set(sx, sy, -0.02 + sd / 2 - 0.1); specialBook.rotation.z = 0.05; shelf.add(specialBook);
+
+/* ===================== Hotspots ===================== */
+const SPOTS = {
+  door:     { obj: doorSlab,   at: new THREE.Vector3(DOOR_X + 0.25, 1.1, BACK + 0.06), view: [DOOR_X + 0.35, 1.45, BACK + 2.0], target: [DOOR_X, 1.3, BACK] },
+  painting: { obj: paintingGroup, at: new THREE.Vector3(PAINT.x, PAINT.y, BACK + 0.06), view: [PAINT.x, PAINT.y - 0.1, BACK + 1.5], target: [PAINT.x, PAINT.y - 0.05, BACK] },
+  piano:    { obj: pianoGroup, at: new THREE.Vector3(0.0, 0.95, BACK + 0.62),         view: [0.25, 1.45, BACK + 1.9], target: [0.25, 0.8, BACK + 0.5] },
+  library:  { obj: shelf,      at: new THREE.Vector3(2.45 + sx, sy, BACK + 0.3),      view: [2.1, 1.25, BACK + 2.0], target: [2.45, 1.05, BACK] },
+  lang:     { obj: neonGroup,  at: new THREE.Vector3(NEON.x + 0.38, NEON.y - 0.15, BACK + 0.06) }, // switches language, no close-up
+};
+const spotsLayer = $('spots'), tip = $('tip');
+for (const [key, s] of Object.entries(SPOTS)) {
+  const b = document.createElement('button');
+  b.className = 'spot'; b.type = 'button'; b.setAttribute('aria-label', T.spots[key]);
+  b.addEventListener('click', () => openSpot(key));
+  b.addEventListener('pointerenter', () => { tip.textContent = T.spots[key]; tip.classList.add('on'); });
+  b.addEventListener('pointerleave', () => tip.classList.remove('on'));
+  spotsLayer.append(b);
+  s.el = b;
+}
+const pickables = Object.entries(SPOTS).map(([key, s]) => { s.obj.traverse(o => { o.userData.spot = key; }); return s.obj; });
+
+/* ===================== Camera ===================== */
+const view = { pos: new THREE.Vector3(), target: new THREE.Vector3(), focus: null };
+const home = { pos: new THREE.Vector3(), target: new THREE.Vector3(0.3, 1.25, BACK) };
+// On tall phone screens the whole wall does not fit: show part of it and let the player swipe sideways
+let narrow = false, pan = 0, homeDist = 4;
+const PAN_LIMIT = 2.2;
+function setHome() {
+  home.pos.set(0.3 + pan, 1.55, BACK + homeDist);
+  home.target.set(0.3 + pan, 1.25, BACK);
+  if (!view.focus) { view.pos.copy(home.pos); view.target.copy(home.target); }
+}
+function layout() {
+  const w = innerWidth, h = innerHeight;
+  if (!w || !h) return; // hidden tab or frame: keep the last framing
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+  // Stand back far enough to see the door, the piano and the library (or a slice of the wall on narrow screens)
+  narrow = camera.aspect < 0.9;
+  const vfov = THREE.MathUtils.degToRad(camera.fov), hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
+  homeDist = Math.min(Math.max((narrow ? 2.6 : 5.9) / 2 / Math.tan(hfov / 2), 2.9 / 2 / Math.tan(vfov / 2)) + 0.2, 9);
+  if (!narrow) pan = 0;
+  setHome();
+}
+addEventListener('resize', layout);
+new ResizeObserver(layout).observe(canvas);
+
+function flyTo(pos, target, duration = 1.1) {
+  return new Promise(resolve => gsap.timeline({ onComplete: resolve })
+    .to(view.pos, { x: pos[0] ?? pos.x, y: pos[1] ?? pos.y, z: pos[2] ?? pos.z, duration, ease: 'power3.inOut' }, 0)
+    .to(view.target, { x: target[0] ?? target.x, y: target[1] ?? target.y, z: target[2] ?? target.z, duration, ease: 'power3.inOut' }, 0));
+}
+const flyHome = () => { view.focus = null; return flyTo(home.pos, home.target, 1.0); };
+
+/* ===================== Pointer in the room ===================== */
+const raycaster = new THREE.Raycaster(), ndc = new THREE.Vector2(), mouse = { x: 0, y: 0 };
+let hovered = null, busy = false;
+function pick(e) {
+  ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  raycaster.setFromCamera(ndc, camera);
+  return raycaster.intersectObjects(pickables, true)[0]?.object.userData.spot ?? null;
+}
+canvas.addEventListener('pointermove', e => {
+  if (e.pointerType !== 'mouse') return;
+  mouse.x = e.clientX / innerWidth - 0.5; mouse.y = e.clientY / innerHeight - 0.5;
+  hovered = busy ? null : pick(e);
+  canvas.classList.toggle('hot', !!hovered);
+  if (hovered) { tip.textContent = T.spots[hovered]; tip.style.left = e.clientX + 'px'; tip.style.top = e.clientY + 'px'; tip.classList.add('on'); }
+  else tip.classList.remove('on');
+});
+let downAt = null, dragX = null;
+canvas.addEventListener('pointerdown', e => { downAt = { x: e.clientX, y: e.clientY }; dragX = e.clientX; });
+// Swipe sideways to look around (narrow screens)
+canvas.addEventListener('pointermove', e => {
+  if (dragX === null || !narrow || view.focus || busy) return;
+  const dx = e.clientX - dragX; dragX = e.clientX;
+  pan = THREE.MathUtils.clamp(pan - dx * (homeDist * 0.9 / innerWidth), -PAN_LIMIT, PAN_LIMIT);
+  setHome();
+});
+addEventListener('pointerup', () => { dragX = null; });
+canvas.addEventListener('pointerup', e => {
+  if (!downAt || Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 10) return;
+  downAt = null;
+  const key = pick(e);
+  if (key) openSpot(key);
+});
+
+/* ===================== Close-up views ===================== */
+const viewEl = $('view'), viewBody = $('viewBody');
+$('viewClose').textContent = T.ui.close;
+let viewOpen = false, onViewClose = null;
+function showView(nodes, { sound = 'paper', onClose = null } = {}) {
+  viewBody.replaceChildren(...nodes);
+  viewEl.hidden = false; viewOpen = true; onViewClose = onClose;
+  viewEl.scrollTop = 0;
+  gsap.fromTo(viewEl, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3, ease: 'power1.out' });
+  gsap.fromTo(viewBody, { y: 14, scale: 0.97 }, { y: 0, scale: 1, duration: 0.45, ease: 'power3.out' });
+  if (sound) play(sound);
+  $('viewClose').focus({ preventScroll: true });
+}
+function closeView() {
+  if (!viewOpen) return;
+  viewOpen = false;
+  gsap.to(viewEl, { autoAlpha: 0, duration: 0.18, ease: 'power1.in', onComplete: () => { viewEl.hidden = true; gsap.set(viewEl, { clearProps: 'all' }); } });
+  const done = onViewClose; onViewClose = null;
+  if (done) done(); else flyHome();
+}
+$('viewClose').addEventListener('click', closeView);
+viewEl.addEventListener('click', e => { if (e.target === viewEl) closeView(); });
+addEventListener('keydown', e => { if (e.key === 'Escape') { if (viewOpen) closeView(); else if (pianoOpen) closePiano(); } });
+
+const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
+
+function paintingView() {
+  const c = document.createElement('canvas'); c.width = 1600; c.height = 1000; c.className = 'painting';
+  drawPainting(c.getContext('2d'), c.width, c.height);
+  c.setAttribute('role', 'img'); c.setAttribute('aria-label', T.spots.painting);
+  return [el('div', { className: 'frame' }, c),
+          el('div', { className: 'brass-plate', style: 'padding:14px 28px' }, el('p', { style: 'font-size:clamp(20px,4vw,30px)', textContent: T.painting.plaque }))];
+}
+/* ---- Keyboards: shared by the picture sheet and the playable piano ---- */
+const KEYS = {
+  R: { whites: ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5'], blacks: [['C#4', 0], ['D#4', 1], ['F#4', 3], ['G#4', 4], ['A#4', 5], ['C#5', 7], ['D#5', 8]] },
+  L: { whites: ['E2', 'F2', 'G2', 'A2', 'B2', 'C3', 'D3', 'E3', 'F3', 'G3', 'A3'], blacks: [['F#2', 1], ['G#2', 2], ['A#2', 3], ['C#3', 5], ['D#3', 6], ['F#3', 8], ['G#3', 9]] },
+};
+// A small drawing of both keyboards with some keys lit (sheet cells)
+function miniPiano(lit) {
+  const W = 120, kh = 26, gap = 6;
+  let s = `<svg viewBox="0 0 ${W} ${kh * 2 + gap}" xmlns="http://www.w3.org/2000/svg">`;
+  ['R', 'L'].forEach((hand, row) => {
+    const k = KEYS[hand], y = row * (kh + gap), ww = W / k.whites.length, color = hand === 'R' ? '#e8842a' : '#2f7de1';
+    k.whites.forEach((n, i) => { s += `<rect x="${i * ww + 0.5}" y="${y}" width="${ww - 1}" height="${kh}" rx="1.5" fill="${lit.includes(`${hand}:${n}`) ? color : '#fffdf6'}" stroke="#3a2f22" stroke-width="0.6"/>`; });
+    k.blacks.forEach(([n, after]) => { const bw = ww * 0.58; s += `<rect x="${(after + 1) * ww - bw / 2}" y="${y}" width="${bw}" height="${kh * 0.6}" rx="1" fill="${lit.includes(`${hand}:${n}`) ? color : '#1a1a1a'}"/>`; });
+  });
+  return s + '</svg>';
+}
+function sheetView() {
+  const S = T.sheet; let step = 0;
+  const body = el('div', { className: 'paper sheet' }, el('h2', { textContent: S.title }), el('p', { className: 'sub', textContent: S.sub }));
+  CONFIG.solution.forEach((line, li) => {
+    body.append(el('h3', { textContent: fill(S.line, { n: li + 1 }) }));
+    const cells = el('div', { className: 'cells' });
+    line.forEach(keys => {
+      step++;
+      const hands = new Set(keys.map(k => k[0]));
+      const label = hands.size > 1 ? S.together : hands.has('R') ? S.right : S.left;
+      const cell = el('div', { className: 'cell' }, el('b', { textContent: step }), el('small', { textContent: label, style: `color:${hands.size > 1 ? '#7a2016' : hands.has('R') ? '#c4661c' : '#2f6fc9'}` }));
+      cell.insertAdjacentHTML('beforeend', miniPiano(keys));
+      cells.append(cell);
+    });
+    body.append(cells);
+  });
+  return [body];
+}
+function revealView() {
+  const r = T.reveal, card = el('div', { className: 'paper reveal' });
+  if (r.image) { const img = el('img', { alt: '' }); const urls = assetUrls(r.image); img.onerror = () => { urls.shift(); if (urls.length) img.src = urls[0]; else img.remove(); }; img.src = urls[0]; card.append(img); }
+  card.append(el('h2', { textContent: r.title }), el('p', { textContent: r.text }));
+  return [card];
+}
+
+let solved = !!store.get().solved, sheetFound = !!store.get().sheet;
+async function openSpot(key) {
+  if (key === 'lang') return switchLanguage();
+  if (busy || pianoOpen || viewOpen) return;
+  busy = true; tip.classList.remove('on');
+  const s = SPOTS[key];
+  view.focus = key;
+  if (key === 'library') gsap.to(specialBook.position, { z: specialBook.position.z + 0.12, duration: 0.6, ease: 'power2.out' });
+  await flyTo(s.view, s.target, 1.0);
+  busy = false;
+  if (key === 'door') { if (solved) showView(revealView()); else { say(T.doorLocked); flyHome(); } return; }
+  if (key === 'painting') return showView(paintingView());
+  if (key === 'library') {
+    sheetFound = true; store.set({ sheet: true }); $('pianoSheet').hidden = false;
+    return showView(sheetView(), { onClose: () => { gsap.to(specialBook.position, { z: specialBook.position.z - 0.12, duration: 0.5, ease: 'power2.inOut' }); flyHome(); } });
+  }
+  if (key === 'piano') openPiano();
+}
+
+/* ===================== The piano ===================== */
+const pianoEl = $('piano'), noteEl = $('pianoNote');
+let pianoOpen = false;
+$('pianoClose').textContent = T.piano.close;
+$('pianoSheet').textContent = T.piano.sheet;
+$('pianoSheet').hidden = !sheetFound;
+$('handR').textContent = T.piano.right; $('handL').textContent = T.piano.left;
+pianoEl.setAttribute('aria-label', T.piano.name);
+// Computer keys (by physical position, so English and Arabic layouts both work)
+const CODES = {
+  KeyQ: 'R:C4', KeyW: 'R:D4', KeyE: 'R:E4', KeyR: 'R:F4', KeyT: 'R:G4', KeyY: 'R:A4', KeyU: 'R:B4', KeyI: 'R:C5', KeyO: 'R:D5', KeyP: 'R:E5',
+  Digit2: 'R:C#4', Digit3: 'R:D#4', Digit5: 'R:F#4', Digit6: 'R:G#4', Digit7: 'R:A#4', Digit9: 'R:C#5', Digit0: 'R:D#5',
+  KeyA: 'L:E2', KeyS: 'L:F2', KeyD: 'L:G2', KeyF: 'L:A2', KeyG: 'L:B2', KeyH: 'L:C3', KeyJ: 'L:D3', KeyK: 'L:E3', KeyL: 'L:F3', Semicolon: 'L:G3', Quote: 'L:A3',
+  BracketLeft: 'L:G#3',
+};
+const LETTER = Object.fromEntries(Object.entries(CODES).map(([code, id]) => [id, code.replace(/^Key|^Digit/, '').replace('Semicolon', ';').replace('Quote', "'").replace('BracketLeft', '[')]));
+const keyEls = new Map();
+for (const hand of ['R', 'L']) {
+  const wrap = $(`keys${hand}`), k = KEYS[hand], ww = 100 / k.whites.length;
+  const make = (note, cls) => {
+    const id = `${hand}:${note}`;
+    const b = el('button', { className: `key ${cls}`, type: 'button', tabIndex: -1 });
+    b.dataset.id = id; b.setAttribute('aria-label', `${hand === 'R' ? T.piano.right : T.piano.left} ${note}`);
+    if (LETTER[id]) b.append(el('span', { className: 'letter', textContent: LETTER[id] }));
+    keyEls.set(id, b); return b;
+  };
+  k.whites.forEach(n => wrap.append(make(n, 'white')));
+  k.blacks.forEach(([n, after]) => { const b = make(n, 'black'); b.style.left = `calc(${(after + 1) * ww}% - 3.1%)`; wrap.append(b); });
+}
+
+const pointerKeys = new Map(); // pointerId → key id (each finger is its own press)
+function keyDown(id) {
+  const b = keyEls.get(id); if (!b) return;
+  b.classList.add('down');
+  noteOn(id, id.slice(2));
+  if (navigator.vibrate && touch) navigator.vibrate(8);
+  hideCoach();
+  check(id);
+}
+function keyUp(id) {
+  const b = keyEls.get(id); if (!b) return;
+  if ([...pointerKeys.values()].includes(id) || heldCodes.has(id)) return; // still held by another finger / key
+  b.classList.remove('down');
+  noteOff(id);
+}
+pianoEl.addEventListener('pointerdown', e => {
+  const b = e.target.closest('.key'); if (!b) return;
+  e.preventDefault();
+  getAudio();
+  pointerKeys.set(e.pointerId, b.dataset.id);
+  keyDown(b.dataset.id);
+});
+const release = e => { const id = pointerKeys.get(e.pointerId); if (!id) return; pointerKeys.delete(e.pointerId); keyUp(id); };
+addEventListener('pointerup', release); addEventListener('pointercancel', release);
+const heldCodes = new Set();
+addEventListener('keydown', e => {
+  if (!pianoOpen || e.repeat || e.ctrlKey || e.altKey || e.metaKey) return;
+  const id = CODES[e.code]; if (!id) return;
+  e.preventDefault(); getAudio();
+  heldCodes.add(id); keyDown(id);
+});
+addEventListener('keyup', e => { const id = CODES[e.code]; if (!id || !heldCodes.has(id)) return; heldCodes.delete(id); keyUp(id); });
+pianoEl.addEventListener('contextmenu', e => e.preventDefault());
+
+let coachTimer = 0;
+// After "Show answer", the piano shows the way: the keys of the current step glow
+const guiding = () => answerShown && !solved;
+function showGuide() {
+  pianoEl.querySelectorAll('.key.guide').forEach(b => b.classList.remove('guide'));
+  if (!guiding() || !pianoOpen) return;
+  const step = SOL[line][idx];
+  step.forEach(id => keyEls.get(id)?.classList.add('guide'));
+  noteEl.textContent = fill(step.length > 1 ? T.piano.guideTogether : T.piano.guide, { l: line + 1, s: idx + 1, n: SOL[line].length });
+}
+const pianoHelp = () => (touch ? T.piano.coach : T.piano.mouse);
+function hideCoach() { clearTimeout(coachTimer); pianoEl.querySelectorAll('.coach').forEach(c => c.classList.add('gone')); }
+async function openPiano() {
+  pianoOpen = true; document.body.classList.add('playing');
+  getAudio();
+  stopMusic(); // the background piece makes room while you play
+  pianoEl.hidden = false;
+  gsap.fromTo(pianoEl, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.35, ease: 'power1.out' });
+  gsap.from(pianoEl.querySelectorAll('.kb'), { y: 24, autoAlpha: 0, duration: 0.5, ease: 'power3.out', stagger: 0.08, delay: 0.1 });
+  pianoEl.querySelectorAll('.coach').forEach(c => c.classList.remove('gone'));
+  coachTimer = setTimeout(hideCoach, 4000);
+noteEl.textContent = samples.size === SAMPLE_NAMES.length ? pianoHelp() : T.piano.loading;
+  samplesReady.then(() => { if (pianoOpen) { noteEl.textContent = pianoHelp(); showGuide(); } });
+  showGuide();
+  if (touch) { try { await document.documentElement.requestFullscreen?.(); await screen.orientation?.lock?.('landscape'); } catch { /* not allowed here */ } }
+}
+function closePiano(backToRoom = true) {
+  pianoOpen = false; document.body.classList.remove('playing');
+  for (const id of keyEls.keys()) { keyEls.get(id).classList.remove('down'); noteOff(id); }
+  pointerKeys.clear(); heldCodes.clear(); showGuide();
+  gsap.to(pianoEl, { autoAlpha: 0, duration: 0.25, ease: 'power1.in', onComplete: () => { pianoEl.hidden = true; gsap.set(pianoEl, { clearProps: 'all' }); } });
+  if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+  if (backToRoom) flyHome();
+  if (solved && backToRoom) setTimeout(startMusic, 600);
+}
+$('pianoClose').addEventListener('click', () => closePiano());
+$('pianoSheet').addEventListener('click', () => showView(sheetView(), { onClose: () => {} }));
+
+/* ===================== Checking the answer =====================
+   Every press plays its note. A wrong key quietly restarts the current line (finished lines stay lit).
+   "Together" steps accept the two keys in either order within CONFIG.pairWindow ms. */
+const SOL = CONFIG.solution;
+let line = 0, idx = 0, pending = null;
+const linesDone = () => line;
+function check(id, retry = true) {
+  if (solved) return;
+  const step = SOL[line][idx], now = performance.now();
+  if (step.length === 1) {
+    if (id === step[0]) return advance();
+    return wrong(id, retry);
+  }
+  if (!pending || now - pending.t > CONFIG.pairWindow) {
+    if (step.includes(id)) { pending = { id, t: now }; return; }
+    return wrong(id, retry);
+  }
+  if (step.includes(id) && id !== pending.id) return advance();
+  if (id === pending.id) { pending.t = now; return; }
+  wrong(id, retry);
+}
+function wrong(id, retry) {
+  const restarted = idx > 0 || pending;
+  idx = 0; pending = null;
+  if (restarted && retry) check(id, false); // the wrong key may itself be the first key of the line
+  if (retry) showGuide();
+}
+function advance() {
+  idx++; pending = null;
+  if (idx < SOL[line].length) return showGuide();
+  lightLamp(line, true);
+  line++; idx = 0;
+  if (line === SOL.length) solve();
+  else say(fill(T.lineDone, { n: line }));
+  showGuide();
+}
+function lightLamp(i, animate) {
+  const l = lamps[i];
+  $('pianoLamps').children[i].classList.add('on');
+  if (animate) {
+    play('lamp');
+    gsap.to(l.bulb.material, { emissiveIntensity: 2.2, duration: 0.5, ease: 'power2.out' });
+    gsap.to(l.glow, { intensity: 0.9, duration: 0.6, ease: 'power2.out' });
+  } else { l.bulb.material.emissiveIntensity = 2.2; l.glow.intensity = 0.9; }
+}
+function setDoorOpen(animate) {
+  const tl = gsap.timeline();
+  if (animate) {
+    play('latch'); play('creak', 0.35); play('thud', 2.2);
+    tl.to(hinge.rotation, { y: -0.06, duration: 0.25, ease: 'power2.out' })
+      .to(hinge.rotation, { y: -1.75, duration: 2.0, ease: 'power3.inOut' })
+      .to(doorway, { intensity: 6, duration: 1.6, ease: 'power2.out' }, 0.3);
+  } else { hinge.rotation.y = -1.75; doorway.intensity = 6; }
+  return tl;
+}
+async function solve() {
+  solved = true; store.set({ solved: true });
+  say(T.solved);
+  await new Promise(r => setTimeout(r, 1300));
+  closePiano(false); // the camera goes to the door instead of back to the room
+  await flyTo(SPOTS.door.view, SPOTS.door.target, 1.2);
+  view.focus = 'door';
+  await setDoorOpen(true);
+  startMusic();
+  showView(revealView());
+}
+
+/* ---- Sound button: the house's atmosphere and the music after solving ---- */
+const musicBtn = $('musicBtn');
+$('musicLabel').textContent = T.ui.sound;
+musicBtn.setAttribute('aria-pressed', String(soundOn));
+musicBtn.addEventListener('click', () => {
+  soundOn = !soundOn;
+  store.set({ soundOff: !soundOn });
+  musicBtn.setAttribute('aria-pressed', String(soundOn));
+  if (soundOn) { startAmbience(); if (solved) startMusic(); } else { stopMusic(); ambience?.stop(); }
+});
+
+/* ===================== Status line ===================== */
+const status = $('status');
+function say(text) {
+  gsap.timeline()
+    .to(status, { autoAlpha: 0, y: -4, duration: 0.15, ease: 'power1.out', overwrite: true })
+    .add(() => { status.textContent = text; })
+    .fromTo(status, { y: 6 }, { autoAlpha: 1, y: 0, duration: 0.35, ease: 'power2.out' });
+}
+
+/* ===================== Hints: one at a time, then the answer ===================== */
+const HU = T.ui, ORDER = CONFIG.hintOrder;
+const hintList = $('hintList'), hintBtn = $('hintBtn'), answerBtn = $('answerBtn'), hintToggle = $('hintToggle');
+let hintsUsed = Math.min(store.get().hints ?? 0, ORDER.length), answerShown = !!store.get().answer;
+$('hints').setAttribute('aria-label', HU.show);
+answerBtn.textContent = HU.showAnswer;
+const VIEW_FOR = { painting: paintingView, sheet: sheetView }; // the riddle is text only
+function card(tag, text, look, animate) {
+  const li = el('li', { className: 'card' }, el('span', { className: 'tag', textContent: tag }), document.createTextNode(text));
+  if (VIEW_FOR[look]) li.append(el('button', { className: 'look', type: 'button', textContent: HU.look, onclick: () => { if (look === 'sheet') { sheetFound = true; store.set({ sheet: true }); $('pianoSheet').hidden = false; } showView(VIEW_FOR[look](), { onClose: () => {} }); } }));
+  hintList.append(li);
+  if (animate) { hintList.hidden = false; gsap.from(li, { y: 14, autoAlpha: 0, duration: 0.5, ease: 'power3.out' }); li.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); play('paper'); }
+}
+function swapButton(out, inn, animate) {
+  if (!animate) { out.hidden = true; if (inn) inn.hidden = false; return; }
+  gsap.to(out, { autoAlpha: 0, scale: 0.96, duration: 0.15, ease: 'power1.out', onComplete: () => {
+    out.hidden = true; gsap.set(out, { clearProps: 'opacity,visibility,scale' });
+    if (!inn) return;
+    inn.hidden = false; gsap.from(inn, { autoAlpha: 0, scale: 0.96, duration: 0.3, ease: 'back.out(1.6)' });
+  } });
+}
+function updateHintButtons(animate) {
+  hintBtn.replaceChildren(HU.hint, el('span', { className: 'count', textContent: `${hintsUsed}/${ORDER.length}` }));
+  if (hintsUsed >= ORDER.length && !hintBtn.hidden) swapButton(hintBtn, answerShown ? null : answerBtn, animate);
+  if (answerShown && !answerBtn.hidden) swapButton(answerBtn, null, animate);
+  hintToggle.hidden = hintsUsed === 0;
+  hintToggle.textContent = hintList.hidden ? HU.show : HU.hide;
+}
+const addHint = (i, animate) => card(fill(HU.hintTitle, { n: i + 1, total: ORDER.length }), T.hints[ORDER[i]], ORDER[i], animate);
+hintBtn.addEventListener('click', () => { if (hintsUsed >= ORDER.length) return; addHint(hintsUsed, true); hintsUsed++; store.set({ hints: hintsUsed }); updateHintButtons(true); });
+answerBtn.addEventListener('click', () => {
+  answerShown = true; store.set({ answer: true }); card(HU.answerTitle, T.hints.answer, 'sheet', true); updateHintButtons(true);
+  if (solved) return;
+  if (pianoOpen) return showGuide();
+  const wait = viewOpen ? 1300 : 500; // let the close-up fly home first
+  if (viewOpen) closeView();
+  setTimeout(() => openSpot('piano'), wait);
+});
+hintToggle.addEventListener('click', () => {
+  hintList.hidden = !hintList.hidden;
+  if (!hintList.hidden) gsap.from(hintList.children, { y: 10, autoAlpha: 0, duration: 0.35, ease: 'power2.out', stagger: 0.04 });
+  hintToggle.textContent = hintList.hidden ? HU.show : HU.hide;
+});
+for (let i = 0; i < hintsUsed; i++) addHint(i, false);
+if (answerShown) card(HU.answerTitle, T.hints.answer, 'sheet', false);
+hintList.hidden = hintsUsed === 0;
+hintBtn.hidden = hintsUsed >= ORDER.length;
+answerBtn.hidden = hintsUsed < ORDER.length || answerShown;
+updateHintButtons(false);
+
+/* ===================== Loop ===================== */
+const damp = (a, b, k, dt) => a + (b - a) * (1 - Math.exp(-k * dt));
+const cam = { x: 0, y: 0 }, projected = new THREE.Vector3();
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.05); last = now;
+  cam.x = damp(cam.x, calm || view.focus ? 0 : mouse.x * 0.35, 2.5, dt);
+  cam.y = damp(cam.y, calm || view.focus ? 0 : -mouse.y * 0.18, 2.5, dt);
+  camera.position.set(view.pos.x + cam.x, view.pos.y + cam.y, view.pos.z);
+  camera.lookAt(view.target);
+  // The book holding the sheet breathes a soft glow
+  specialBook.material.emissiveIntensity = 0.25 + 0.2 * Math.sin(now / 520);
+  // The neon sign hums, and now and then stutters for a moment
+  if (!neonBusy && Math.random() < 0.0005) {
+    neonSign.material.opacity = 0.55; neonGlow.intensity = 0.3;
+    setTimeout(() => { if (!neonBusy) { neonSign.material.opacity = 1; neonGlow.intensity = 0.6; } }, 70);
+  }
+  // Candle flames waver; their light breathes with them
+  for (const c of candles) {
+    const f = 0.85 + 0.1 * Math.sin(now / 90 + c.seed) + 0.06 * Math.sin(now / 37 + c.seed * 3);
+    c.glow.intensity = 0.55 * f;
+    c.flame.scale.set(1, f, 1);
+    c.flame.rotation.z = 0.06 * Math.sin(now / 160 + c.seed);
+  }
+  // Dust floats slowly upward through the lamp light
+  dust.rotation.y = Math.sin(now / 9000) * 0.05;
+  dust.position.y = ((now / 40000) % 0.3);
+  // Hotspot markers follow their objects on screen; hidden while looking closely or playing
+  const hideAll = !!view.focus || pianoOpen || viewOpen;
+  for (const s of Object.values(SPOTS)) {
+    projected.copy(s.at).project(camera);
+    const x = (projected.x * 0.5 + 0.5) * innerWidth, y = (-projected.y * 0.5 + 0.5) * innerHeight;
+    s.el.style.transform = `translate(${x}px, ${y}px)`;
+    s.el.classList.toggle('away', hideAll || projected.z > 1);
+  }
+  if (!pianoOpen) renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+
+/* ===================== Boot ===================== */
+layout();
+if (solved) {
+  for (let i = 0; i < 4; i++) lightLamp(i, false); line = SOL.length; setDoorOpen(false);
+  addEventListener('pointerdown', () => samplesReady.then(startMusic), { once: true });
+}
+// The house starts breathing at the first tap, click or key (browsers allow no sound before that)
+for (const type of ['pointerdown', 'keydown']) addEventListener(type, () => startAmbience(), { once: true });
+requestAnimationFrame(frame);
+$('loader').classList.add('done');
+gsap.timeline({ delay: 0.15 })
+  .from(view.pos, { z: view.pos.z + 1.6, y: view.pos.y + 0.3, duration: 2.4, ease: 'expo.out' })
+  .from(ceilingLamp, { intensity: 0, duration: 1.6, ease: 'power2.out' }, 0)
+  .from('#label, #hints', { autoAlpha: 0, y: 8, duration: 0.6, ease: 'power2.out', stagger: 0.1 }, 0.9)
+  .add(() => say(solved ? T.solved : narrow ? `${T.intro} ${T.swipe}` : T.intro), 1.2);
+</script>
+</body>
+</html>

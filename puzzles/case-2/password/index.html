@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>المهمة الأولى | Task One</title>
+
+<style>
+    * { 
+        margin: 0; 
+        padding: 0; 
+        box-sizing: border-box; 
+    }
+
+
+    .container {
+        width: 100%;
+        max-width: 650px;
+        background: linear-gradient(145deg, #14202C 0%, #0F1924 100%);
+        border-radius: 12px;
+        border: 2px solid #192533;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+        position: relative;
+        margin: 20px auto;
+        height: auto;
+    }
+
+    .content { 
+        padding: 35px; 
+        transition: opacity 0.3s ease;
+    }
+
+    .gold-divider { 
+        text-align: center; 
+        margin: 10px 0 25px; 
+        color: #AA814B;
+    }
+
+    .magnifying-glass-icon {
+        width: 40px; 
+        height: auto;
+        display: inline-block; 
+        transform-origin: center center;
+        animation: magnifyJiggle 8s ease-in-out infinite alternate;
+    }
+
+    @keyframes magnifyJiggle {
+        0%, 100% { transform: translate(0, 0) rotate(0deg); }
+        20% { transform: translate(8px, -6px) rotate(3deg); }
+        40% { transform: translate(-5px, 9px) rotate(-4deg); }
+        60% { transform: translate(-7px, -4px) rotate(-2deg); }
+        80% { transform: translate(4px, 8px) rotate(4deg); }
+    }
+
+    .question {
+        font-size: 24px;
+        margin-bottom: 25px;
+        text-align: center;
+        line-height: 1.6;
+        color: #EDE6D6;
+        padding: 20px;
+        background: rgba(26, 39, 53, 0.5);
+        border-radius: 8px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Direction-specific borders */
+    body.lang-ar .question {
+        border-right: 4px solid #AA814B;
+        border-left: 1px solid #192533;
+    }
+
+    body.lang-en .question {
+        border-left: 4px solid #AA814B;
+        border-right: 1px solid #192533;
+    }
+
+    .input-container { 
+        position: relative; 
+        margin-bottom: 25px; 
+    }
+
+    .input-field {
+        width: 100%;
+        padding: 18px 22px;
+        background: rgba(15, 25, 36, 0.7);
+        border: 2px solid #192533;
+        border-radius: 8px;
+        color: #EDE6D6;
+        font-size: 18px;
+        text-align: center;
+        transition: all 0.3s;
+    }
+
+    .input-field:focus {
+        outline: none;
+        border-color: #AA814B;
+        box-shadow: 0 0 0 3px rgba(196, 163, 90, 0.3);
+        transform: scale(1.02);
+    }
+
+    .input-field::placeholder { color: #8C6B3B; }
+
+    .submit-btn {
+        width: 100%;
+        padding: 18px;
+        background: linear-gradient(90deg, #AA814B 0%, #8C6B3B 100%);
+        border: none;
+        border-radius: 8px;
+        color: #14202C;
+        font-size: 20px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 5px 15px rgba(196, 163, 90, 0.3);
+        letter-spacing: 1px;
+    }
+
+    .submit-btn:hover {
+        background: linear-gradient(90deg, #8C6B3B 0%, #AA814B 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(196, 163, 90, 0.4);
+    }
+
+    .submit-btn:active {
+        transform: translateY(1px);
+    }
+
+    .feedback {
+        text-align: center;
+        margin-top: 25px;
+        min-height: 28px;
+        font-weight: 500;
+        padding: 15px;
+        border-radius: 8px;
+        font-size: 18px;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all 0.5s ease;
+    }
+
+    .feedback.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .feedback.correct {
+        color: #AA814B;
+        background: rgba(196, 163, 90, 0.1);
+        border: 1px solid #8C6B3B;
+    }
+
+    .feedback.incorrect {
+        color: #AA814B;
+        background: rgba(140, 107, 59, 0.15);
+        border: 1px solid #8C6B3B;
+    }
+
+    .hint-section {
+        margin-top: 25px;
+        text-align: center;
+        padding: 20px;
+        background: rgba(26, 39, 53, 0.5);
+        border-radius: 8px;
+        border: 1px solid #192533;
+        opacity: 0;
+        transform: scale(0.9);
+        transition: all 0.5s ease;
+        display: none;
+    }
+
+    .hint-section.show {
+        display: block;
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    .hint-btn {
+        background: transparent;
+        border: 2px solid #AA814B;
+        color: #AA814B;
+        padding: 12px 28px;
+        border-radius: 30px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 16px;
+    }
+
+    .hint-btn:hover { background: rgba(196, 163, 90, 0.15); }
+
+    .hint-text {
+        background: rgba(15, 25, 36, 0.7);
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 20px;
+        color: #EDE6D6;
+        font-size: 17px;
+        line-height: 1.6;
+        opacity: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: all 0.5s ease;
+    }
+
+    body.lang-ar .hint-text {
+        border-right: 3px solid #AA814B;
+        text-align: right;
+    }
+
+    body.lang-en .hint-text {
+        border-left: 3px solid #AA814B;
+        text-align: left;
+    }
+
+    .hint-text.show {
+        opacity: 1;
+        max-height: 200px;
+    }
+
+    .reveal-btn {
+        background: #AA814B;
+        border: 2px solid #AA814B;
+        color: #14202C;
+        font-weight: bold;
+        padding: 12px 28px;
+        border-radius: 30px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 16px;
+        margin-top: 20px;
+        display: none;
+        opacity: 0;
+        transform: translateY(15px);
+    }
+
+    .reveal-btn.visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .reveal-btn:hover {
+        background: #8C6B3B;
+        border-color: #8C6B3B;
+        color: #fff;
+    }
+
+    .answer-display {
+        display: none;
+        margin-top: 20px;
+        padding: 20px;
+        width: 100%;
+        background: linear-gradient(145deg, #2a1f10 0%, #1f1408 100%);
+        border: 2px solid #AA814B;
+        border-radius: 8px;
+        color: #EDE6D6;
+        font-size: 20px;
+        font-weight: bold;
+        text-align: center;
+        box-shadow: 0 0 15px rgba(170, 129, 75, 0.4);
+        animation: fadeIn 0.5s ease;
+    }
+
+    .attempts {
+        text-align: center;
+        margin-top: 25px;
+        color: #8C6B3B;
+        font-size: 16px;
+        background: rgba(26, 39, 53, 0.5);
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px dashed #192533;
+    }
+
+    /* SUCCESS CARD POPUP */
+    .success-card {
+        display: none;
+        position: relative;
+        width: 100%;
+        height: auto;
+        background: linear-gradient(145deg, #1a2939 0%, #14202C 100%);
+        border-radius: 12px;
+        padding: 25px;
+        text-align: center;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+    }
+
+    .success-card.show { 
+        display: flex; 
+    }
+
+    .success-card h2 { 
+        color: #AA814B; 
+        margin-bottom: 10px; 
+        font-size: 32px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .success-card p { 
+        color: #EDE6D6; 
+        font-size: 18px; 
+        line-height: 1.4;
+        margin-bottom: 15px; 
+        font-weight: 500;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Frame adapting perfectly to image dimensions */
+    #zoom-container {
+        width: 100%;
+        height: auto;
+        margin: 15px auto;
+        border-radius: 8px;
+        border: 2px solid #AA814B;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        position: relative;
+        overflow: hidden;
+        background: rgba(15, 25, 36, 0.5);
+    }
+
+    #zoomImage { 
+        width: 100%; 
+        height: auto;
+        display: block; 
+    }
+
+    .success-card-btn {
+        background: linear-gradient(90deg, #AA814B 0%, #8C6B3B 100%);
+        border: none;
+        border-radius: 10px;
+        color: #14202C;
+        padding: 12px 35px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 5px 15px rgba(196, 163, 90, 0.3);
+        margin-top: 15px;
+    }
+
+    .success-card-btn:hover { 
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(196, 163, 90, 0.5);
+    }
+
+    .success-card-btn:active {
+        transform: translateY(1px);
+    }
+
+    /* RTL / LTR CLASSES */
+    body.lang-ar {
+        direction: rtl;
+        text-align: right;
+    }
+
+    body.lang-en {
+        direction: ltr;
+        text-align: left;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+        20%, 40%, 60%, 80% { transform: translateX(10px); }
+    }
+
+    @media (max-width: 600px) {
+        .question { font-size: 20px; }
+        .content { padding: 25px; }
+        .success-card { padding: 20px; }
+        .success-card h2 { font-size: 28px; }
+        .success-card p { font-size: 16px; }
+    }
+</style>
+</head>
+<body>
+
+<div class="container" id="mainContainer">
+    <!-- SUCCESS CARD POPUP -->
+    <div class="success-card" id="successCard">
+        <h2 id="successTitle"></h2>
+        <p id="successDesc"></p>
+
+        <div id="zoom-container">
+            <img id="zoomImage" src="" alt="Success Image">
+        </div>
+        <button class="success-card-btn" id="successCardBtn"></button>
+    </div>
+
+    <!-- MAIN QUIZ CONTENT -->
+    <div class="content" id="quizContent">
+        <div class="gold-divider">
+            <img src="https://pdacases.com/wp-content/uploads/2025/11/64d5cc18c0370268169d0bee4e347fa3-removebg-preview.png" class="magnifying-glass-icon" alt="Icon">
+        </div>
+
+        <p class="question" id="question"></p>
+
+        <div class="input-container">
+            <input type="text" class="input-field" id="answerInput">
+        </div>
+
+        <button class="submit-btn" id="submitBtn"></button>
+
+        <p class="feedback" id="feedback"></p>
+
+        <div class="hint-section" id="hintSection">
+            <button class="hint-btn" id="hintBtn"></button>
+            <p class="hint-text" id="hintText"></p>
+            <button class="reveal-btn" id="showAnswerBtn"></button>
+            <div class="answer-display" id="answerDisplay"></div>
+        </div>
+
+        <p class="attempts" id="attemptsText"></p>
+    </div>
+</div>
+
+<script>
+// Language Detection via URL path
+const isArabic = window.location.pathname.includes('/ar/');
+const currentLang = isArabic ? 'ar' : 'en';
+
+document.body.classList.add(isArabic ? 'lang-ar' : 'lang-en');
+
+// i18n Configuration Data
+const i18n = {
+    ar: {
+        question: "توصل إلى الرمز السرّي لفتح العلبة الإسطوانية",
+        placeholder: "أدخل إجابتك هنا...",
+        submitBtn: "إرسال الإجابة",
+        feedbackCorrect: "صحيح! أحسنت!",
+        feedbackIncorrect: "غير صحيح، يرجى المحاولة مرة أخرى.",
+        hintBtn: "اطلب تلميحًا",
+        showAnswerBtn: "أظهر الإجابة",
+        correctAnswerLabel: "الإجابة الصحيحة هي:",
+        attemptsText: "المحاولات غير الصحيحة: ",
+        successTitle: "أحسنت!",
+        successDesc: "يمكنك الأن فتح الظرف الأول",
+        successBtn: "حسنًا",
+        imageUrl: "https://pdacases.com/wp-content/uploads/2026/05/1000011148-topaz-scaled.png",
+        hintsPool: [
+            "الحل رقم",
+            "تأمل ترتيب سرقة اللوحات والقطع الفنية من كل قاعة عرض",
+            "ارجع إلى كل لوحة أو قطعة فنية وانظر من أي قاعة سُرقت وتأكد إن كان التسلسل منطقي مع أقوال الحارسين",
+            "ركز بما سُرق من القاعة الزرقاء، وهل يتوافق توقيت السرقة مع لحظة دخول اللصّين؟"
+        ]
+    },
+    en: {
+        question: "Find the secret code to open the cylindrical box.",
+        placeholder: "Enter your answer here...",
+        submitBtn: "Submit your answer",
+        feedbackCorrect: "Correct! Well done!",
+        feedbackIncorrect: "Incorrect, please try again.",
+        hintBtn: "Ask for a hint",
+        showAnswerBtn: "Show the answer",
+        correctAnswerLabel: "The correct answer is:",
+        attemptsText: "Incorrect attempts: ",
+        successTitle: "Well Done!",
+        successDesc: "You can now open the first envelope",
+        successBtn: "OK",
+        imageUrl: "https://pdacases.com/wp-content/uploads/2026/09/1000011148-topaz-en-scaled.png",
+        hintsPool: [
+            "The code is numeric.",
+            "Consider the order in which the paintings and works of art were stolen from each gallery/room.",
+            "Go back to each painting or work of art and see from which gallery/room it was stolen, and make sure the sequence is consistent with the guards' statements.",
+            "Focus on what was stolen from the blue gallery, and whether the timing of the theft coincides with the moment the thieves entered."
+        ]
+    }
+};
+
+const currentData = i18n[currentLang];
+const correctAnswers = ["1227"];
+
+let incorrectAttempts = 0;
+let currentHintIndex = 0;
+
+// DOM Elements
+const questionEl = document.getElementById("question");
+const answerInput = document.getElementById("answerInput");
+const submitBtn = document.getElementById("submitBtn");
+const feedbackEl = document.getElementById("feedback");
+const hintSection = document.getElementById("hintSection");
+const hintBtn = document.getElementById("hintBtn");
+const hintText = document.getElementById("hintText");
+const showAnswerBtn = document.getElementById("showAnswerBtn");
+const answerDisplay = document.getElementById("answerDisplay");
+const attemptsTextEl = document.getElementById("attemptsText");
+const successCard = document.getElementById("successCard");
+const successTitleEl = document.getElementById("successTitle");
+const successDescEl = document.getElementById("successDesc");
+const successCardBtn = document.getElementById("successCardBtn");
+const zoomImage = document.getElementById("zoomImage");
+const quizContent = document.getElementById("quizContent");
+
+// Populate Elements with Texts and Assets
+function initPage() {
+    questionEl.innerText = currentData.question;
+    answerInput.placeholder = currentData.placeholder;
+    submitBtn.innerText = currentData.submitBtn;
+    hintBtn.innerText = currentData.hintBtn;
+    showAnswerBtn.innerText = currentData.showAnswerBtn;
+    attemptsTextEl.innerText = currentData.attemptsText + incorrectAttempts;
+
+    successTitleEl.innerText = currentData.successTitle;
+    successDescEl.innerText = currentData.successDesc;
+    successCardBtn.innerText = currentData.successBtn;
+    zoomImage.src = currentData.imageUrl;
+}
+
+// Answer Checking
+function checkAnswer() {
+    const userAnswer = answerInput.value.trim().toLowerCase();
+    if (!userAnswer) return;
+
+    const isCorrect = correctAnswers.some(ans => userAnswer === ans.toLowerCase());
+
+    if (isCorrect) {
+        feedbackEl.innerText = currentData.feedbackCorrect;
+        feedbackEl.className = 'feedback correct show';
+        createConfetti();
+        setTimeout(showSuccessCard, 1000);
+    } else {
+        incorrectAttempts++;
+        feedbackEl.innerText = currentData.feedbackIncorrect;
+        feedbackEl.className = 'feedback incorrect show';
+        attemptsTextEl.innerText = currentData.attemptsText + incorrectAttempts;
+
+        if (incorrectAttempts >= 2) {
+            hintSection.classList.add('show');
+        }
+
+        answerInput.style.animation = 'shake 0.5s';
+        setTimeout(() => answerInput.style.animation = '', 500);
+        setTimeout(() => { answerInput.value = ''; answerInput.focus(); }, 1000);
+    }
+}
+
+// Success Card Actions
+function showSuccessCard() {
+    quizContent.style.display = 'none';
+    successCard.classList.add('show');
+}
+
+function hideSuccessCard() {
+    successCard.classList.remove('show');
+    quizContent.style.display = 'block';
+}
+
+// Hints Handler
+hintBtn.addEventListener("click", function() {
+    hintText.innerText = currentData.hintsPool[currentHintIndex];
+    hintText.classList.add('show');
+    currentHintIndex++;
+
+    if (currentHintIndex >= currentData.hintsPool.length) {
+        hintBtn.style.display = 'none';
+        showAnswerBtn.style.display = 'inline-block';
+        setTimeout(() => {
+            showAnswerBtn.classList.add('visible');
+        }, 100);
+    }
+});
+
+// Show Answer Handler
+showAnswerBtn.addEventListener("click", function() {
+    answerDisplay.innerHTML = `${currentData.correctAnswerLabel}<br>${correctAnswers[0]}`;
+    answerDisplay.style.lineHeight = "1.75";
+    answerDisplay.style.display = 'block';
+    showAnswerBtn.style.display = 'none';
+});
+
+// Create confetti effect
+function createConfetti() {
+    const colors = ['#AA814B', '#8C6B3B', '#EDE6D6', '#A89F8E'];
+    const container = quizContent;
+    
+    for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.width = '10px';
+        confetti.style.height = '10px';
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.position = 'absolute';
+        confetti.style.borderRadius = '50%';
+        confetti.style.top = '50%';
+        confetti.style.left = '50%';
+        confetti.style.opacity = '0';
+        
+        container.appendChild(confetti);
+        
+        const animation = confetti.animate([
+            { opacity: 1, transform: 'translate(0, 0) rotate(0deg)' },
+            { opacity: 1, transform: `translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px) rotate(${Math.random() * 360}deg)` }
+        ], {
+            duration: 1000,
+            easing: 'ease-out'
+        });
+        
+        animation.onfinish = () => confetti.remove();
+    }
+}
+
+// Listeners
+submitBtn.addEventListener('click', checkAnswer);
+successCardBtn.addEventListener('click', hideSuccessCard);
+answerInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') checkAnswer(); });
+
+// Initialize System
+initPage();
+</script>
+</body>
+</html>

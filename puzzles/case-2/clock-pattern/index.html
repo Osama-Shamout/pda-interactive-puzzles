@@ -1,0 +1,48 @@
+<meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDA Puzzle</title>
+    <link rel="stylesheet" href="style.css">
+
+
+
+        <!-- IMAGE WRAPPER -->
+    <div class="pda-image-wrapper">
+        <img src="" alt="Puzzle Image" class="pda-main-image">
+        <!-- GLOWING POINT -->
+        <div class="point-marker" id="openPuzzle"></div>
+    </div>
+
+    <!-- PUZZLE POPUP OVERLAY -->
+    <div class="pda-popup-overlay" id="pdaPopupOverlay">
+        <div class="pda-popup-wrapper">
+            <!-- CLOSE BUTTON -->
+            <button class="pda-popup-close" id="closePuzzle" title="Close">✕</button>
+
+            <div class="pda-pattern-wrap">
+                <div class="pda-container" id="pdaBox">
+                    <canvas class="pda-canvas" id="pdaCanvas"></canvas>
+
+                    <div class="pda-hint-box" id="pdaHintBox"></div>
+
+                    <div class="pda-btn-bar">
+                        <button class="pda-btn" id="pdaBtnReset">↺ Reset</button>
+                        <button class="pda-btn" id="pdaBtnHint">✦ Hint</button>
+                        <button class="pda-btn" id="pdaBtnAnswer">Answer</button>
+                    </div>
+
+                    <div class="pda-answer-overlay" id="pdaAnswerOverlay">
+                    <div class="pda-answer-modal">
+                        <label id="pdaAnswerLabel">ENTER YOUR ANSWER</label>
+                        <input type="text" id="pdaAnswerInput" placeholder="Type here…" autocomplete="off">
+                        <div class="pda-modal-btns">
+                            <button class="pda-btn" id="pdaBtnSubmit">Submit</button>
+                            <button class="pda-btn" id="pdaBtnClose">Close</button>
+                        </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>

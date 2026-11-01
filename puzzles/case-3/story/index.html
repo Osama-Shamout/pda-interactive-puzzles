@@ -1,0 +1,1233 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d0b09">
+<title>Story PDA</title>
+<meta name="description" content="A 3D case-file storybook prototype for PDA. Every page is drawn in code.">
+<script>
+  // Set language before first paint. Arabic when the address starts with /ar/ (pdacases.com/ar/story-case-3/),
+  // ends with /ar, or has ?lang=ar. Everything else is English.
+  if (/^\/ar(\/|$)|\/ar\/?$/.test(location.pathname) || new URLSearchParams(location.search).get('lang') === 'ar') {
+    document.documentElement.lang = 'ar';
+    document.documentElement.dir = 'rtl';
+  }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Bodoni+Moda:opsz,wght@6..96,400;6..96,600&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --desk: #17130f;
+    --manila: #ece2c9;
+    --ink: #1d1a16;
+    --stamp: #c4372b;
+    --brass: #c9a45c;
+    --ui: rgba(236, 226, 201, 0.92);
+    --ui-dim: rgba(236, 226, 201, 0.5);
+    --ease: cubic-bezier(0.2, 0, 0, 1);
+    --display: "Bodoni Moda", serif;
+    --type: "Special Elite", "Courier New", monospace;
+  }
+  html[lang="ar"] { --display: "Amiri", serif; --type: "Amiri", serif; }
+
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+  body { -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
+  html { -webkit-font-smoothing: antialiased; }
+  body { background: var(--desk); color: var(--ui); font-family: var(--type); }
+  #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #gl.hot { cursor: pointer; }
+
+  .ui { position: fixed; z-index: 2; }
+  /* Safe-area aware edges (notches, rounded corners, home indicator).
+     The top-right corner stays empty for the Admin's floating English / عربي switch. */
+  .brand {
+    --edge: max(22px, env(safe-area-inset-left), env(safe-area-inset-right));
+    top: max(24px, env(safe-area-inset-top)); inset-inline-start: var(--edge);
+    font-family: var(--display); font-weight: 600; font-size: 21px; white-space: nowrap;
+  }
+  html[lang="ar"] .brand { font-weight: 700; font-size: 24px; top: max(20px, env(safe-area-inset-top)); }
+  .hint {
+    left: 0; right: 0; text-align: center; pointer-events: none;
+    bottom: max(98px, calc(env(safe-area-inset-bottom) + 82px));
+    font-size: 14px; color: var(--ui-dim); transition: opacity 0.5s var(--ease);
+  }
+  html[lang="ar"] .hint { font-size: 17px; }
+  .hint.gone { opacity: 0; }
+
+  .sound .off { display: none; }
+  .sound[aria-pressed="false"] .on { display: none; }
+  .sound[aria-pressed="false"] .off { display: block; }
+
+  .dock {
+    left: 50%; bottom: max(26px, calc(env(safe-area-inset-bottom) + 10px)); transform: translateX(-50%);
+    display: flex; align-items: center; gap: 18px;
+    padding: 8px; border-radius: 999px;
+    background: rgba(12, 10, 8, 0.55);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 0 0 1px rgba(236,226,201,0.08), 0 12px 32px rgba(0,0,0,0.45);
+  }
+  .dock button {
+    width: 44px; height: 44px; border-radius: 999px; border: 0; cursor: pointer;
+    display: grid; place-items: center;
+    background: rgba(236, 226, 201, 0.08); color: var(--ui);
+    transition-property: background-color, scale, opacity;
+    transition-duration: 0.18s; transition-timing-function: var(--ease);
+  }
+  .dock button:hover { background: rgba(236, 226, 201, 0.18); }
+  .dock button:active { scale: 0.96; }
+  .dock button:disabled { opacity: 0.25; cursor: default; }
+  button:focus-visible, a:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+  .dock svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 1.75; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  [dir="rtl"] .dock .arrow { transform: scaleX(-1); }
+  .dock .sound { margin-inline-start: -6px; background: transparent; color: var(--ui-dim); }
+  .dock .sound:hover { color: var(--ui); }
+
+  .caption { min-width: 200px; text-align: center; }
+  .caption .num { font-size: 12px; color: var(--ui-dim); font-variant-numeric: tabular-nums; }
+  .caption .name {
+    font-family: var(--display); font-size: 18px; line-height: 1.3;
+    max-width: min(260px, 52vw); margin-inline: auto;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  html[lang="ar"] .caption .num { font-size: 15px; }
+  html[lang="ar"] .caption .name { font-size: 21px; font-weight: 700; }
+  .bar { height: 2px; margin-top: 6px; background: rgba(236,226,201,0.12); border-radius: 2px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--brass); transform-origin: left; transform: scaleX(0); }
+  [dir="rtl"] .bar i { transform-origin: right; }
+
+  .loader {
+    position: fixed; inset: 0; z-index: 5; display: grid; place-items: center;
+    background: var(--desk); font-size: 16px; color: var(--ui-dim);
+    transition: opacity 0.8s var(--ease), visibility 0.8s;
+  }
+  html[lang="ar"] .loader { font-size: 20px; }
+  .loader.done { opacity: 0; visibility: hidden; }
+
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  /* Photographic finish: lens vignette and a whisper of film grain over the 3D scene */
+  .film {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background:
+      radial-gradient(ellipse 80% 75% at 50% 45%, transparent 55%, rgba(0,0,0,0.6) 100%),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0.08 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+
+  @media (max-width: 760px) {
+    .brand { --edge: max(14px, env(safe-area-inset-left), env(safe-area-inset-right)); }
+    .brand { top: max(20px, env(safe-area-inset-top)); font-size: 18px; }
+    html[lang="ar"] .brand { font-size: 21px; top: max(17px, env(safe-area-inset-top)); }
+    .hint { display: none; }
+    .dock { bottom: max(16px, calc(env(safe-area-inset-bottom) + 6px)); gap: 10px; }
+    .caption { min-width: 130px; }
+  }
+  /* Phones in landscape: the height is precious */
+  @media (max-height: 500px) and (orientation: landscape) {
+    .brand { top: max(10px, env(safe-area-inset-top)); font-size: 17px; }
+    html[lang="ar"] .brand { top: max(8px, env(safe-area-inset-top)); font-size: 19px; }
+    .hint { display: none; }
+    .dock { bottom: max(8px, env(safe-area-inset-bottom)); padding: 4px; gap: 10px; }
+    .dock button { width: 40px; height: 40px; }
+    .caption .num { display: none; }
+    .bar { margin-top: 4px; }
+  }
+</style>
+<script type="importmap">
+  { "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  } }
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+</head>
+<body>
+  <!-- All visible words come from CONFIG in the script below -->
+  <div class="loader" id="loader"></div>
+  <canvas id="gl" aria-hidden="true"></canvas>
+  <div class="film" aria-hidden="true"></div>
+
+  <div class="ui brand" id="brand"></div>
+  <div class="ui hint" id="hint"></div>
+
+  <nav class="ui dock" id="dock">
+    <button id="prev">
+      <svg class="arrow" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <div class="caption" aria-live="polite">
+      <div class="num" id="num"></div>
+      <div class="name" id="name"></div>
+      <div class="bar"><i id="bar"></i></div>
+    </div>
+    <button id="next">
+      <svg class="arrow" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+    </button>
+    <button class="sound" id="sound" aria-pressed="true">
+      <svg class="on" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>
+      <svg class="off" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 10l4 4M21 10l-4 4"/></svg>
+    </button>
+  </nav>
+
+  <!-- Story text for screen readers; the 3D book is drawn from the same STORY data. -->
+  <article class="sr" id="sr"></article>
+
+<script type="module">
+import * as THREE from 'three';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+/* =====================================================================
+   CONFIG: edit everything here. كل المحتوى بتعدله من هون.
+   - Files you upload in Admin are used by their name, e.g. 'clue-1.png'.
+   - Leave a file name empty ('') to use the built-in version.
+   - Each chapter = two pages: a picture page, then a text page.
+   - Add or remove chapters freely; keep the same count in English and Arabic.
+   ===================================================================== */
+const CONFIG = {
+  sound: {
+    file: 'opening-page-paper.wav', // page-turn sound; '' = built-in soft paper sound
+    volume: 0.65,                   // 0 = silent, 1 = full
+    startAt: 0,                     // seconds to skip at the start of the file
+  },
+  flipSeconds: 1.25,                // how long one page turn takes
+
+  en: {
+    pageTitle: 'Story PDA',
+    brand: 'Story PDA',
+    loading: 'Opening the file…',
+    hint: 'Scroll, swipe or use the arrow keys',
+    cover: {
+      image: '',                    // a full cover picture replaces the drawn cover
+      caseNo: 'Case file no. 001',
+      lines: ['Story', 'PDA'],
+      subtitle: 'Private Detective Agency',
+      stamp: 'CONFIDENTIAL',
+    },
+    chapters: [
+      // art: 'fingerprint' | 'box' | 'board' | 'lens' (drawn), or set image: 'file.png' to use your own picture
+      { title: 'One detail', art: 'fingerprint', image: '', stamp: 'EXHIBIT A',
+        body: 'Every case begins with one detail. Something small, in the wrong place, that nobody else noticed.' },
+      { title: 'The box arrives', art: 'box', image: '', stamp: '',
+        body: 'Documents. Photographs. Objects. Everything you need is inside, and nothing is explained.' },
+      { title: 'Connect the pieces', art: 'board', image: '', stamp: '',
+        body: 'Pin it to the wall. Draw the lines. The story is hiding in what connects them.' },
+      { title: 'Close the case', art: 'lens', image: '', stamp: 'SOLVED',
+        body: 'When the last piece fits, you will know. Every detective does.' },
+    ],
+    back: {
+      image: '',                    // a full back-cover picture replaces the drawn one
+      text: 'Your case is waiting.',
+      small: 'pdacases.com',
+    },
+    ui: {
+      fileLabel: 'File {n}',              // on each text page
+      fileOf: 'File {n} of {total}',      // in the bottom bar
+      cover: 'Cover', closed: 'Case closed',
+      prev: 'Previous page', next: 'Next page', pages: 'Pages', sound: 'Sound',
+    },
+  },
+
+  ar: {
+    pageTitle: 'قصة PDA',
+    brand: 'قصة PDA',
+    loading: 'جارٍ فتح الملف…',
+    hint: 'مرّر أو اسحب أو استخدم الأسهم',
+    cover: {
+      image: '',
+      caseNo: 'ملف القضية رقم 001',
+      lines: ['قصة', 'PDA'],
+      subtitle: 'وكالة التحقيقات الخاصة',
+      stamp: 'سرّي',
+    },
+    chapters: [
+      { title: 'تفصيل واحد', art: 'fingerprint', image: '', stamp: 'الدليل أ',
+        body: 'كل قضية تبدأ بتفصيل واحد. شيء صغير، في المكان الخطأ، لم يلاحظه أحد غيرك.' },
+      { title: 'وصل الصندوق', art: 'box', image: '', stamp: '',
+        body: 'وثائق. صور. أغراض. كل ما تحتاجه موجود في الداخل، ولا شيء مشروح.' },
+      { title: 'اربط الخيوط', art: 'board', image: '', stamp: '',
+        body: 'علّقها على الحائط. ارسم الخطوط. القصة مختبئة في ما يربط بينها.' },
+      { title: 'أغلق القضية', art: 'lens', image: '', stamp: 'تم الحل',
+        body: 'عندما تكتمل آخر قطعة، ستعرف. كل محقق يعرف.' },
+    ],
+    back: {
+      image: '',
+      text: 'قضيتك بانتظارك.',
+      small: 'pdacases.com',
+    },
+    ui: {
+      fileLabel: 'ملف {n}',
+      fileOf: 'ملف {n} من {total}',
+      cover: 'الغلاف', closed: 'أُغلقت القضية',
+      prev: 'الصفحة السابقة', next: 'الصفحة التالية', pages: 'الصفحات', sound: 'الصوت',
+    },
+  },
+};
+/* ======================== end of CONFIG ======================== */
+
+/* ---------- Language: set in <head> from the address (/ar/… = Arabic, right-to-left book) ---------- */
+const LANG = document.documentElement.lang === 'ar' ? 'ar' : 'en';
+const RTL = LANG === 'ar';
+const S = RTL ? -1 : 1; // mirrors the book and every left/right gesture
+const STORY = CONFIG[LANG];
+const UI = STORY.ui;
+const fill = (text, vars) => text.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
+
+// Where an uploaded file can live. On the Arabic address (/ar/story-case-3/) the files usually sit
+// next to the English page (/story-case-3/), so that is tried first, then the current address.
+function assetUrls(name) {
+  const here = new URL(name, location.href).href;
+  const english = new URL(name, location.origin + location.pathname.replace(/^\/ar(?=\/)/, '') + location.search).href;
+  return [...new Set([english, here])];
+}
+
+// Canvas fonts: Bodoni + typewriter for English, Amiri for Arabic
+const FONT = RTL
+  ? { display: px => `700 ${px}px "Amiri"`, type: px => `400 ${Math.round(px * 1.15)}px "Amiri"` }
+  : { display: px => `600 ${px}px "Bodoni Moda"`, type: px => `${px}px "Special Elite"` };
+
+/* ---------- Constants ---------- */
+const W = 1, H = 1.38;               // page size in world units
+const SEG = 40;                       // columns per page (more = smoother bend)
+const GAP = 0.004;                    // space between stacked sheets
+// Sheets, in order: front cover board, title page, one sheet per chapter, end page, back cover board
+const N = STORY.chapters.length + 3;
+const FLIP = CONFIG.flipSeconds;      // seconds per page turn
+// Page turns are the story itself, so they always animate. Reduced-motion users only lose the camera drift.
+const calmCamera = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const touchDevice = matchMedia('(pointer: coarse)').matches; // phones/tablets get a lighter shadow map
+const C = { manila: '#ece2c9', folder: '#b8925a', ink: '#1d1a16', stamp: '#c4372b', brass: '#c9a45c', string: '#b3261e' };
+
+/* ---------- Renderer / scene ---------- */
+const canvas = document.getElementById('gl');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#0d0b09');
+const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
+
+/* ---------- Photo textures and room light (Poly Haven / ambientCG, CC0) from the assets folder ---------- */
+// On /ar/slug/ uploaded files usually sit beside the English page; also accept files uploaded without the folder
+const texLoader = new THREE.TextureLoader();
+async function loadTexture(name, color, repeat = [1, 1]) {
+  for (const url of [...assetUrls('assets/' + name), ...assetUrls(name)]) {
+    try {
+      const t = await texLoader.loadAsync(url);
+      t.colorSpace = color ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.repeat.set(...repeat);
+      t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      return t;
+    } catch { /* try the next place */ }
+  }
+  return null;
+}
+const [leather, leatherN, leatherR, deskC, deskN, deskR, paperN, paperR] = await Promise.all([
+  loadTexture('leather-color.jpg', true, [1.4, 1.4]), loadTexture('leather-normal.jpg', false, [1.4, 1.4]), loadTexture('leather-rough.jpg', false, [1.4, 1.4]),
+  loadTexture('desk-color.jpg', true, [5, 5]), loadTexture('desk-normal.jpg', false, [5, 5]), loadTexture('desk-rough.jpg', false, [5, 5]),
+  loadTexture('paper-normal.jpg', false, [1.6, 1.6]), loadTexture('paper-rough.jpg', false, [1.6, 1.6]),
+]);
+if (!leather) console.warn('Photo textures not found in the assets folder; plain materials are used instead.');
+// Reflections and soft fill come from a real photographed room
+const pmrem = new THREE.PMREMGenerator(renderer);
+(async () => {
+  for (const url of [...assetUrls('assets/room.hdr'), ...assetUrls('room.hdr')]) {
+    try {
+      const hdr = await new RGBELoader().loadAsync(url);
+      scene.environment = pmrem.fromEquirectangular(hdr).texture;
+      hdr.dispose();
+      return;
+    } catch { /* try the next place */ }
+  }
+})();
+
+// Desk lamp: one warm spotlight does the mood, a faint cool fill keeps shadows readable
+scene.add(new THREE.HemisphereLight(0xb9c4ff, 0x1a120a, 0.18));
+const lamp = new THREE.SpotLight(0xffe2b8, 3.4, 0, 0.5, 0.9, 0);
+lamp.position.set(-1.5, 1.7, 3.4);
+lamp.castShadow = true;
+lamp.shadow.mapSize.setScalar(touchDevice ? 1024 : 2048);
+lamp.shadow.bias = -0.0004;
+lamp.shadow.normalBias = 0.015;
+lamp.shadow.radius = 4;
+lamp.shadow.camera.near = 1; lamp.shadow.camera.far = 8;
+scene.add(lamp, lamp.target);
+
+const book = new THREE.Group(); // slides so the open spread stays centred
+book.scale.x = S;               // Arabic: spine on the right, pages turn left to right
+scene.add(book);
+
+/* ---------- Tiny seeded random so drawings look the same every load ---------- */
+function rng(seed) {
+  return () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+}
+
+/* ---------- Desk: real wood (the book lies on it; +z is "up" from the desk) ---------- */
+{
+  const desk = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.MeshStandardMaterial(deskC
+    ? { map: deskC, normalMap: deskN, roughnessMap: deskR, roughness: 0.95, color: 0x5e5048, envMapIntensity: 0.25 }
+    : { color: 0x241a13, roughness: 0.9 }));
+  desk.receiveShadow = true;
+  scene.add(desk);
+}
+
+/* ---------- Materials shared by the book ---------- */
+const leatherMat = new THREE.MeshStandardMaterial(leather
+  ? { map: leather, normalMap: leatherN, roughnessMap: leatherR, roughness: 0.9, color: 0x8a6a58, envMapIntensity: 0.6 }
+  : { color: 0x4a2c1c, roughness: 0.7 });
+
+/* ---------- Page drawing (canvas → texture) ---------- */
+// Pages are drawn as they will be seen. spineLeft says which edge of the page sits at the spine.
+const TW = 1024, TH = Math.round(TW * H / W);
+const PAD = 110;
+
+function setDir(g) {
+  g.direction = RTL ? 'rtl' : 'ltr';
+  g.textAlign = RTL ? 'right' : 'left';
+}
+
+function wrapText(g, text, x, y, maxW, lh) {
+  let line = '';
+  for (const word of text.split(' ')) {
+    const test = line ? line + ' ' + word : word;
+    if (g.measureText(test).width > maxW && line) { g.fillText(line, x, y); y += lh; line = word; }
+    else line = test;
+  }
+  if (line) g.fillText(line, x, y);
+  return y;
+}
+
+function paper(g, bg, seed) {
+  g.fillStyle = bg; g.fillRect(0, 0, TW, TH);
+  const r = rng(seed);
+  for (let i = 0; i < 12000; i++) {
+    g.fillStyle = `rgba(70,45,15,${r() * 0.05})`;
+    g.fillRect(r() * TW, r() * TH, 1.6, 1.6);
+  }
+  // darker, slightly worn edges
+  const v = g.createRadialGradient(TW / 2, TH / 2, TH * 0.35, TW / 2, TH / 2, TH * 0.8);
+  v.addColorStop(0, 'rgba(90,60,20,0)'); v.addColorStop(1, 'rgba(90,60,20,0.22)');
+  g.fillStyle = v; g.fillRect(0, 0, TW, TH);
+}
+
+function gutter(g, spineLeft, strength = 0.28) {
+  const x0 = spineLeft ? 0 : TW, x1 = spineLeft ? 170 : TW - 170;
+  const grd = g.createLinearGradient(x0, 0, x1, 0);
+  grd.addColorStop(0, `rgba(30,20,10,${strength})`);
+  grd.addColorStop(1, 'rgba(30,20,10,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, TW, TH);
+}
+
+function pageNumber(g, n, spineLeft) {
+  g.font = FONT.type(26);
+  g.fillStyle = 'rgba(29,26,22,0.5)';
+  g.direction = 'ltr';
+  g.textAlign = spineLeft ? 'right' : 'left'; // outer corner
+  g.fillText(String(n), spineLeft ? TW - PAD : PAD, TH - 80);
+}
+
+function stamp(g, text, x, y, rot, size = 54) {
+  g.save(); g.translate(x, y); g.rotate(rot);
+  g.font = RTL ? FONT.display(size) : FONT.type(size);
+  g.direction = RTL ? 'rtl' : 'ltr';
+  const w = g.measureText(text).width + size;
+  g.globalAlpha = 0.82;
+  g.strokeStyle = C.stamp; g.lineWidth = 6;
+  g.strokeRect(-w / 2, -size * 0.95, w, size * 1.5);
+  g.fillStyle = C.stamp; g.textAlign = 'center';
+  g.fillText(text, 0, size * 0.25);
+  g.restore();
+}
+
+const ART = {
+  // Fingerprint: broken, wobbly loops
+  fingerprint(g, cx, cy) {
+    const r = rng(5);
+    g.strokeStyle = C.ink; g.lineCap = 'round';
+    for (let k = 0; k < 22; k++) {
+      const rx = 30 + k * 13, ry = 44 + k * 17;
+      const gapA = r() * Math.PI * 2, gapLen = 0.2 + r() * 0.5;
+      g.lineWidth = 5 + r() * 2;
+      g.globalAlpha = 0.55 + r() * 0.4;
+      g.beginPath();
+      for (let s = 0; s <= 120; s++) {
+        const a = gapA + gapLen + (s / 120) * (Math.PI * 2 - gapLen);
+        const wob = Math.sin(a * 3 + k) * 4;
+        const x = cx + Math.cos(a) * (rx + wob), y = cy + Math.sin(a) * (ry + wob);
+        s ? g.lineTo(x, y) : g.moveTo(x, y);
+      }
+      g.stroke();
+    }
+    g.globalAlpha = 1;
+  },
+  // Case box with wax seal
+  box(g, cx, cy) {
+    const w = 560, h = 380;
+    g.save(); g.translate(cx, cy); g.rotate(-0.05);
+    g.fillStyle = 'rgba(0,0,0,0.18)'; g.fillRect(-w / 2 + 18, -h / 2 + 22, w, h);
+    g.fillStyle = C.folder; g.fillRect(-w / 2, -h / 2, w, h);
+    g.strokeStyle = 'rgba(29,26,22,0.6)'; g.lineWidth = 4;
+    g.strokeRect(-w / 2, -h / 2, w, h);
+    g.beginPath(); g.moveTo(-w / 2, -h / 2); g.lineTo(0, 10); g.lineTo(w / 2, -h / 2); g.stroke();
+    g.fillStyle = C.stamp; g.beginPath(); g.arc(0, 10, 58, 0, Math.PI * 2); g.fill();
+    g.fillStyle = 'rgba(0,0,0,0.25)'; g.beginPath(); g.arc(0, 10, 40, 0, Math.PI * 2); g.fill();
+    g.fillStyle = C.manila; g.font = '36px "Special Elite"'; g.textAlign = 'center'; g.direction = 'ltr';
+    g.fillText('PDA', 0, 22);
+    g.restore();
+  },
+  // Evidence board: pinned photos joined by red string
+  board(g, cx, cy) {
+    const pts = [[-230, -260], [190, -300], [-60, -20], [230, 120], [-250, 260], [70, 330]];
+    const r = rng(17);
+    pts.forEach(([x, y], i) => {
+      g.save(); g.translate(cx + x, cy + y); g.rotate((r() - 0.5) * 0.3);
+      g.fillStyle = 'rgba(0,0,0,0.2)'; g.fillRect(-82, -92, 176, 196);
+      g.fillStyle = '#f7f1e3'; g.fillRect(-90, -100, 176, 196);
+      g.fillStyle = i % 2 ? '#3a342c' : '#5b5145'; g.fillRect(-76, -86, 148, 130);
+      g.restore();
+    });
+    g.strokeStyle = C.string; g.lineWidth = 4;
+    [[0, 2], [2, 1], [2, 3], [2, 4], [4, 5], [3, 5], [0, 4]].forEach(([a, b]) => {
+      g.beginPath(); g.moveTo(cx + pts[a][0], cy + pts[a][1] - 90); g.lineTo(cx + pts[b][0], cy + pts[b][1] - 90); g.stroke();
+    });
+    pts.forEach(([x, y]) => {
+      g.fillStyle = C.stamp; g.beginPath(); g.arc(cx + x, cy + y - 90, 13, 0, Math.PI * 2); g.fill();
+    });
+  },
+  // Magnifying glass
+  lens(g, cx, cy) {
+    g.save(); g.translate(cx - 30, cy - 40);
+    g.strokeStyle = C.ink; g.lineCap = 'round';
+    g.lineWidth = 46; g.beginPath(); g.moveTo(150, 150); g.lineTo(320, 330); g.stroke();
+    g.fillStyle = 'rgba(201,164,92,0.18)'; g.beginPath(); g.arc(0, 0, 210, 0, Math.PI * 2); g.fill();
+    g.lineWidth = 28; g.strokeStyle = C.brass; g.beginPath(); g.arc(0, 0, 210, 0, Math.PI * 2); g.stroke();
+    g.lineWidth = 10; g.strokeStyle = 'rgba(255,255,255,0.55)';
+    g.beginPath(); g.arc(0, 0, 160, Math.PI * 1.1, Math.PI * 1.45); g.stroke();
+    g.restore();
+  },
+};
+
+/* ---------- Uploaded pictures (from CONFIG) ---------- */
+const images = {};
+async function loadImage(name) {
+  for (const url of assetUrls(name)) {
+    const img = await new Promise(resolve => {
+      const im = new Image();
+      im.onload = () => resolve(im);
+      im.onerror = () => resolve(null);
+      im.src = url;
+    });
+    if (img) { images[name] = img; return; }
+  }
+  console.warn(`Picture "${name}" could not be loaded; the drawn version is used instead.`);
+}
+
+// Fit a picture inside a box without stretching it ('cover' fills the box and crops the edges)
+function drawPicture(g, img, x, y, w, h, mode = 'contain') {
+  const scale = (mode === 'cover' ? Math.max : Math.min)(w / img.width, h / img.height);
+  const dw = img.width * scale, dh = img.height * scale;
+  g.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+}
+
+// A photo pinned to the page: white border and a soft shadow
+function drawPhoto(g, img, cx, cy, maxW, maxH, rot) {
+  const scale = Math.min(maxW / img.width, maxH / img.height);
+  const w = img.width * scale, h = img.height * scale, border = 22;
+  g.save(); g.translate(cx, cy); g.rotate(rot);
+  g.fillStyle = 'rgba(0,0,0,0.22)'; g.fillRect(-w / 2 - border + 14, -h / 2 - border + 18, w + border * 2, h + border * 2);
+  g.fillStyle = '#f7f1e3'; g.fillRect(-w / 2 - border, -h / 2 - border, w + border * 2, h + border * 2);
+  g.drawImage(img, -w / 2, -h / 2, w, h);
+  g.restore();
+}
+
+// Text block edges: wider margin on the spine side
+function columns(spineLeft) {
+  const left = spineLeft ? PAD + 50 : PAD, right = TW - (spineLeft ? PAD : PAD + 50);
+  return { x: RTL ? right : left, maxW: right - left };
+}
+
+/* ---------- Covers: drawn on a transparent layer laid over real leather ----------
+   `mask` draws only the gold-foil parts in white: it becomes the metalness map, so only the foil shines. */
+function foil(g, mask) {
+  if (mask) return '#fff';
+  const grd = g.createLinearGradient(0, 0, TW, TH);
+  grd.addColorStop(0, '#f3dc9a'); grd.addColorStop(0.35, '#c9a45c'); grd.addColorStop(0.6, '#f0d48c'); grd.addColorStop(1, '#a8823e');
+  return grd;
+}
+// Pressed-in gold: a dark shadow just below, then the foil
+function foilText(g, text, x, y, mask) {
+  if (!mask) { g.fillStyle = 'rgba(0,0,0,0.55)'; g.fillText(text, x + 2, y + 3); }
+  g.fillStyle = foil(g, mask); g.fillText(text, x, y);
+}
+function foilFrame(g, mask) {
+  g.strokeStyle = foil(g, mask);
+  for (const [k, lw] of [[52, 5], [70, 2]]) { g.lineWidth = lw; g.strokeRect(k, k, TW - 2 * k, TH - 2 * k); }
+  g.fillStyle = foil(g, mask);
+  for (const [x, y] of [[70, 70], [TW - 70, 70], [70, TH - 70], [TW - 70, TH - 70]]) { // corner diamonds
+    g.beginPath(); g.moveTo(x, y - 16); g.lineTo(x + 16, y); g.lineTo(x, y + 16); g.lineTo(x - 16, y); g.closePath(); g.fill();
+  }
+}
+function drawCover(g, spineLeft, mask = false) {
+  const cover = STORY.cover;
+  if (images[cover.image]) { if (!mask) drawPicture(g, images[cover.image], 0, 0, TW, TH, 'cover'); return; }
+  foilFrame(g, mask);
+  // A typed case label glued on the leather, with the red stamp over it
+  const lw = 520, lh = 150, lx = (TW - lw) / 2, ly = 190;
+  if (!mask) {
+    g.save(); g.translate(TW / 2, ly + lh / 2); g.rotate(-0.015 * S);
+    g.fillStyle = 'rgba(0,0,0,0.35)'; g.fillRect(-lw / 2 + 6, -lh / 2 + 8, lw, lh);
+    g.fillStyle = '#e8dcc0'; g.fillRect(-lw / 2, -lh / 2, lw, lh);
+    g.strokeStyle = 'rgba(60,40,20,0.35)'; g.lineWidth = 2; g.strokeRect(-lw / 2 + 12, -lh / 2 + 12, lw - 24, lh - 24);
+    g.fillStyle = C.ink; g.font = FONT.type(32); g.textAlign = 'center'; g.direction = RTL ? 'rtl' : 'ltr';
+    g.fillText(cover.caseNo, 0, 12);
+    g.restore();
+    if (cover.stamp) stamp(g, cover.stamp, TW / 2 + 150 * S, ly + lh + 20, -0.16 * S, 46);
+  }
+  g.textAlign = 'center'; g.direction = RTL ? 'rtl' : 'ltr';
+  g.font = FONT.display(140);
+  cover.lines.forEach((line, k) => foilText(g, line, TW / 2, TH * 0.56 + k * 150, mask));
+  g.font = FONT.type(34);
+  foilText(g, cover.subtitle, TW / 2, TH * 0.56 + (cover.lines.length - 1) * 150 + 90, mask);
+}
+function drawBackCover(g, spineLeft, mask = false) {
+  const back = STORY.back;
+  if (images[back.image]) { if (!mask) drawPicture(g, images[back.image], 0, 0, TW, TH, 'cover'); return; }
+  foilFrame(g, mask);
+  g.textAlign = 'center'; g.direction = RTL ? 'rtl' : 'ltr';
+  g.font = FONT.display(60);
+  foilText(g, back.text, TW / 2, TH / 2, mask);
+  g.font = '30px "Special Elite"'; g.direction = 'ltr';
+  foilText(g, back.small, TW / 2, TH / 2 + 74, mask);
+}
+// Marbled endpaper, as in old hand-bound books: swirled bands of ink
+function drawEndpaper(g, spineLeft) {
+  const r = rng(77);
+  g.fillStyle = '#1d2433'; g.fillRect(0, 0, TW, TH);
+  const inks = ['#6b2420', '#c9a45c', '#e8dcc0', '#2f4a6b', '#8a3b1e', '#1a1a2e'];
+  for (let i = 0; i < 260; i++) {
+    const y0 = r() * TH, amp = 20 + r() * 60, freq = 0.004 + r() * 0.01, phase = r() * 6;
+    g.strokeStyle = inks[Math.floor(r() * inks.length)];
+    g.globalAlpha = 0.35 + r() * 0.5; g.lineWidth = 2 + r() * 9;
+    g.beginPath();
+    for (let x = -20; x <= TW + 20; x += 12) {
+      const y = y0 + Math.sin(x * freq + phase) * amp + Math.sin(x * freq * 3.1 + phase * 2) * amp * 0.3;
+      x === -20 ? g.moveTo(x, y) : g.lineTo(x, y);
+    }
+    g.stroke();
+  }
+  g.globalAlpha = 1;
+  gutter(g, spineLeft, 0.45);
+}
+// Title page: the case, the title, and a table of contents
+function drawTitlePage(g, spineLeft) {
+  paper(g, C.manila, 300);
+  const cover = STORY.cover;
+  g.textAlign = 'center'; g.direction = RTL ? 'rtl' : 'ltr';
+  g.fillStyle = C.stamp; g.font = FONT.type(30);
+  g.fillText(cover.caseNo, TW / 2, 250);
+  g.fillStyle = C.ink; g.font = FONT.display(110);
+  cover.lines.forEach((line, k) => g.fillText(line, TW / 2, 420 + k * 120));
+  g.font = FONT.type(32); g.fillStyle = 'rgba(29,26,22,0.75)';
+  const y0 = 420 + (cover.lines.length - 1) * 120 + 80;
+  g.fillText(cover.subtitle, TW / 2, y0);
+  g.strokeStyle = 'rgba(29,26,22,0.4)'; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(TW / 2 - 120, y0 + 60); g.lineTo(TW / 2 + 120, y0 + 60); g.stroke();
+  g.font = FONT.type(30);
+  STORY.chapters.forEach((ch, i) => {
+    g.fillStyle = 'rgba(29,26,22,0.85)';
+    g.fillText(`${fill(UI.fileLabel, { n: String(i + 1).padStart(2, '0') })}   ${ch.title}`, TW / 2, y0 + 140 + i * 58);
+  });
+  gutter(g, spineLeft);
+}
+// Last page before the back cover
+function drawEndPage(g, spineLeft) {
+  paper(g, C.manila, 400);
+  g.textAlign = 'center'; g.direction = RTL ? 'rtl' : 'ltr';
+  g.fillStyle = C.ink; g.font = FONT.display(64);
+  g.fillText(STORY.back.text, TW / 2, TH * 0.45);
+  stamp(g, UI.closed, TW / 2, TH * 0.6, 0.08 * S, 52);
+  gutter(g, spineLeft);
+}
+
+function drawArtPage(g, ch, n, spineLeft) {
+  paper(g, C.manila, 100 + n);
+  const cx = TW / 2 + (spineLeft ? 30 : -30), cy = TH * 0.44;
+  if (images[ch.image]) drawPhoto(g, images[ch.image], cx, cy, TW - PAD * 2 - 80, TH * 0.56, n % 4 === 1 ? -0.025 : 0.02);
+  else (ART[ch.art] ?? ART.fingerprint)(g, cx, cy);
+  if (ch.stamp) stamp(g, ch.stamp, cx + 110 * S, cy + 410, (n % 4 === 1 ? -0.12 : 0.1), 50);
+  gutter(g, spineLeft);
+  pageNumber(g, n, spineLeft);
+}
+
+function drawTextPage(g, ch, i, n, spineLeft) {
+  paper(g, C.manila, 200 + n);
+  const { x, maxW } = columns(spineLeft);
+  setDir(g);
+  g.fillStyle = C.stamp;
+  g.font = FONT.type(32);
+  g.fillText(fill(UI.fileLabel, { n: String(i + 1).padStart(2, '0') }), x, 290);
+  g.fillStyle = C.ink;
+  g.font = FONT.display(92);
+  const yEnd = wrapText(g, ch.title, x, 410, maxW, RTL ? 120 : 102);
+  g.fillStyle = 'rgba(29,26,22,0.85)';
+  g.font = FONT.type(40);
+  wrapText(g, ch.body, x, yEnd + 120, maxW, RTL ? 78 : 66);
+  gutter(g, spineLeft);
+  pageNumber(g, n, spineLeft);
+}
+
+const maxAniso = renderer.capabilities.getMaxAnisotropy();
+// face: 'front' (page before it turns) or 'back' (page after it turns)
+function texture(draw, face) {
+  const spineLeft = (face === 'front') !== RTL;
+  const c = document.createElement('canvas'); c.width = TW; c.height = TH;
+  draw(c.getContext('2d'), spineLeft);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = maxAniso;
+  if (!spineLeft) { t.wrapS = THREE.RepeatWrapping; t.repeat.x = -1; t.offset.x = 1; } // UV u=0 always sits at the spine
+  return t;
+}
+
+/* ---------- The book ----------
+   Sheet 0 and sheet N-1 are rigid leather boards; the sheets between are paper and bend.
+   Between the boards sits a page block (the many pages the story skips) whose thickness moves
+   from the right-hand pile to the left-hand pile as the reader turns pages. */
+const BOARD_T = 0.016, BOARD_W = W + 0.03, BOARD_H = H + 0.045; // cover board size, slightly larger than the pages
+const BLOCK = 0.05;                                               // thickness of the page block
+const GUTTER = 0.014;                                             // how far pages rise out of the binding
+const sheets = [];
+
+function paperMaterial(map, side) {
+  return new THREE.MeshStandardMaterial({
+    map, side, roughness: 1, envMapIntensity: 0.35,
+    normalMap: paperN, normalScale: new THREE.Vector2(0.35, 0.35), roughnessMap: paperR,
+  });
+}
+// Stripes for the paper edges of the page block: thin lines stacked through the thickness
+function pageEdgeTexture(vertical) {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d'), r = rng(31);
+  g.fillStyle = '#e4d6b6'; g.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < 256; i += 2) {
+    g.fillStyle = `rgba(90,65,35,${0.08 + r() * 0.22})`;
+    vertical ? g.fillRect(i, 0, 1, 256) : g.fillRect(0, i, 256, 1);
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+function pageBlock(side) {
+  const paperTop = new THREE.MeshStandardMaterial({ color: 0xe9dcc0, roughness: 1 });
+  const edgeSide = new THREE.MeshStandardMaterial({ map: pageEdgeTexture(true), roughness: 1 });  // ±x faces: lines run along the page
+  const edgeEnds = new THREE.MeshStandardMaterial({ map: pageEdgeTexture(false), roughness: 1 }); // ±y faces
+  const m = new THREE.Mesh(new THREE.BoxGeometry(W - 0.012, H - 0.01, 1), [edgeSide, edgeSide, edgeEnds, edgeEnds, paperTop, paperTop]);
+  m.position.x = side * (W - 0.012) / 2;
+  m.castShadow = m.receiveShadow = true;
+  book.add(m);
+  return m;
+}
+const blockRight = pageBlock(1), blockLeft = pageBlock(-1);
+
+// Leather spine, seen when the book is closed
+const SPINE_R = (2 * BOARD_T + BLOCK + (N - 2) * GAP) / 2;
+const spine = new THREE.Mesh(new THREE.CylinderGeometry(SPINE_R, SPINE_R, BOARD_H, 32, 1, true, Math.PI, Math.PI), leatherMat);
+spine.position.z = SPINE_R;
+spine.castShadow = true;
+book.add(spine);
+
+// Soft contact shadows where each pile meets the desk
+function contactShadow(side) {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d'), grd = g.createRadialGradient(64, 64, 10, 64, 64, 64);
+  grd.addColorStop(0, 'rgba(0,0,0,0.7)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, 128, 128);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(W * 1.3, H * 1.25),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
+  m.position.set(side * W / 2, 0, 0.0008); m.renderOrder = -1;
+  book.add(m);
+  return m;
+}
+const shadowRight = contactShadow(1), shadowLeft = contactShadow(-1);
+
+function buildBook() {
+  const chs = STORY.chapters, last = N - 1;
+  for (let i = 0; i < N; i++) {
+    // What is printed on each side of sheet i
+    let front, back;
+    if (i === 0) { front = drawCover; back = drawEndpaper; }
+    else if (i === 1) { front = drawTitlePage; back = (g, sl) => drawArtPage(g, chs[0], 1, sl); }
+    else if (i < last - 1) { front = (g, sl) => drawTextPage(g, chs[i - 2], i - 2, i * 2 - 2, sl); back = (g, sl) => drawArtPage(g, chs[i - 1], i * 2 - 1, sl); }
+    else if (i === last - 1) { front = (g, sl) => drawTextPage(g, chs[i - 2], i - 2, i * 2 - 2, sl); back = drawEndPage; }
+    else { front = drawEndpaper; back = drawBackCover; }
+
+    if (i === 0 || i === last) {
+      // Rigid board: leather box plus a printed layer on each face, turning around the spine
+      const pivot = new THREE.Group();
+      const board = new THREE.Mesh(new RoundedBoxGeometry(BOARD_W, BOARD_H, BOARD_T, 3, 0.005), leatherMat);
+      board.position.x = BOARD_W / 2 - 0.004;
+      board.castShadow = board.receiveShadow = true;
+      const layer = new THREE.PlaneGeometry(BOARD_W - 0.012, BOARD_H - 0.012);
+      layer.translate(BOARD_W / 2, 0, 0);
+      const outside = i === 0 ? front : back, inside = i === 0 ? back : front;
+      const outsideFace = i === 0 ? 'front' : 'back';
+      // The printed outside: transparent except for foil and label; a metalness mask makes only the foil shine
+      const print = texture(outside, outsideFace);
+      const metal = texture((g, sl) => { g.fillStyle = '#000'; g.fillRect(0, 0, TW, TH); outside(g, sl, true); }, outsideFace);
+      const printMat = new THREE.MeshStandardMaterial({
+        map: print, metalnessMap: metal, metalness: 1, roughness: 0.38, transparent: true, depthWrite: false,
+        polygonOffset: true, polygonOffsetFactor: -2, envMapIntensity: 1.2,
+        side: i === 0 ? THREE.FrontSide : THREE.BackSide,
+      });
+      const insideMat = paperMaterial(texture(inside, i === 0 ? 'back' : 'front'), i === 0 ? THREE.BackSide : THREE.FrontSide);
+      const out = new THREE.Mesh(layer, printMat), inn = new THREE.Mesh(layer, insideMat);
+      out.position.z = (i === 0 ? 1 : -1) * (BOARD_T / 2 + 0.0005);
+      inn.position.z = (i === 0 ? -1 : 1) * (BOARD_T / 2 + 0.0005);
+      inn.receiveShadow = true;
+      pivot.add(board, out, inn);
+      book.add(pivot);
+      sheets.push({ pivot, board: true, p: 0, dir: 1, peek: 0 });
+      continue;
+    }
+
+    const geo = new THREE.PlaneGeometry(W, H, SEG, 1);
+    geo.translate(W / 2, 0, 0); // spine at x = 0
+    const fMat = paperMaterial(texture(front, 'front'), THREE.FrontSide);
+    fMat.shadowSide = THREE.DoubleSide;
+    const bMat = paperMaterial(texture(back, 'back'), THREE.BackSide);
+    const f = new THREE.Mesh(geo, fMat), b = new THREE.Mesh(geo, bMat);
+    f.castShadow = true; f.receiveShadow = b.receiveShadow = true;
+    f.frustumCulled = b.frustumCulled = false;
+    book.add(f, b);
+    sheets.push({ geo, p: 0, dir: 1, peek: 0, key: '' });
+  }
+}
+
+const xs = new Float32Array(SEG + 1), zs = new Float32Array(SEG + 1);
+let blockR = BLOCK, blockL = 0; // current thickness of the right and left piles of the page block
+
+// Where sheet i rests, turned (p = 1) or not (p = 0): on top of the boards and the page block.
+// Every sheet keeps at least one GAP above the block's top face; sitting exactly on it makes the two
+// surfaces fight for the same depth and the block's blank top flickers through the page.
+function restZ(i, turned) {
+  const inner = N - 2;
+  if (i === 0) return turned ? 0 : BOARD_T + blockR + (inner + 1) * GAP;
+  if (i === N - 1) return turned ? BOARD_T + blockL + (inner + 1) * GAP : 0;
+  return turned ? BOARD_T + blockL + i * GAP : BOARD_T + blockR + (inner - i + 1) * GAP;
+}
+
+// p: 0 = page not turned, 1 = page turned. dir: +1 turning forward, -1 turning back.
+function bend(s, i, p) {
+  const k = Math.sin(p * Math.PI);
+  const baseZ = THREE.MathUtils.lerp(restZ(i, false), restZ(i, true), p) + k * 0.07;
+
+  if (s.board) {
+    // Boards don't bend: they swing around the spine
+    s.pivot.rotation.y = -p * Math.PI;
+    s.pivot.position.z = baseZ + BOARD_T / 2;
+    return;
+  }
+
+  const key = `${p.toFixed(5)}|${s.dir}|${baseZ.toFixed(5)}`;
+  if (key === s.key) return;
+  s.key = key;
+  const theta = p * Math.PI;
+  const curl = k * 0.9 * s.dir; // the free edge trails behind the spine
+  const dx = W / SEG;
+  xs[0] = 0; zs[0] = 0;
+  for (let j = 1; j <= SEG; j++) {
+    const t = (j - 0.5) / SEG;
+    const a = THREE.MathUtils.clamp(theta - curl * t * (2 - t), 0, Math.PI);
+    xs[j] = xs[j - 1] + Math.cos(a) * dx;
+    zs[j] = zs[j - 1] + Math.sin(a) * dx;
+  }
+  const pos = s.geo.attributes.position;
+  for (let v = 0; v < pos.count; v++) {
+    const j = v % (SEG + 1), t = j / SEG;
+    // A page lying open rises out of the binding before it settles flat
+    const rise = GUTTER * (1 - (1 - Math.min(t / 0.24, 1)) ** 2) * (1 - k);
+    pos.setX(v, xs[j]);
+    pos.setZ(v, zs[j] + baseZ + rise);
+  }
+  pos.needsUpdate = true;
+  s.geo.computeVertexNormals();
+}
+
+// Page block, spine and shadows follow how far through the book the reader is
+function updateBlock() {
+  // A page leaves the right pile as soon as it lifts, and joins the left pile only once it lands,
+  // so the blank top of a pile is never exposed while a page is in the air
+  const inner = sheets.slice(1, N - 1), ease = x => { x = THREE.MathUtils.clamp(x, 0, 1); return x * x * (3 - 2 * x); };
+  const lifted = inner.reduce((sum, s) => sum + ease(s.p / 0.15), 0) / inner.length;
+  const landed = inner.reduce((sum, s) => sum + ease((s.p - 0.85) / 0.15), 0) / inner.length;
+  blockR = BLOCK * (1 - lifted); blockL = BLOCK * landed;
+  for (const [m, h] of [[blockRight, blockR], [blockLeft, blockL]]) {
+    m.visible = h > 0.0008;
+    m.scale.z = Math.max(h, 0.0008);
+    m.position.z = BOARD_T + h / 2;
+  }
+  const front = sheets[0].p, back = sheets[N - 1].p;
+  // Fully round when closed, flattening as the front cover opens or before the back cover closes
+  const closed = Math.max(Math.max(0, 1 - front / 0.3), Math.max(0, (back - 0.7) / 0.3));
+  spine.visible = closed > 0.01;
+  spine.scale.x = closed;
+  spine.rotation.y = back > 0.5 ? Math.PI : 0; // closed at the end: the spine is on the other side
+  shadowRight.material.opacity = 1 - back;
+  shadowLeft.material.opacity = front;
+}
+
+/* ---------- Page turning: timed animations, like a real book ---------- */
+let page = 0; // 0 = closed (cover), N = closed (back cover)
+
+function turn(step) {
+  const to = THREE.MathUtils.clamp(page + step, 0, N);
+  if (to === page) return;
+  const s = step > 0 ? sheets[page] : sheets[page - 1];
+  page = to;
+  s.dir = step > 0 ? 1 : -1;
+  // Leather covers are heavier: a little slower, and they land with a thud
+  gsap.to(s, { p: step > 0 ? 1 : 0, duration: s.board ? FLIP * 1.15 : FLIP, ease: 'power2.inOut', overwrite: true });
+  flipSound(s.board);
+  updateCaption();
+  document.getElementById('hint').classList.add('gone');
+}
+// Narrow screens (phones, portrait tablets) show one page at a time:
+// "next" first moves the camera to the second page of the spread, then turns the page.
+let narrow = false;
+let focus = 0; // 0 = first page of the open spread in reading order, 1 = second
+const isOpen = () => page > 0 && page < N;
+function go(step) {
+  // The marbled endpapers (first spread's first page, last spread's second page) have nothing to read: skip them
+  if (narrow && isOpen()) {
+    if (step > 0 && focus === 0 && page !== N - 1) { focus = 1; document.getElementById('hint').classList.add('gone'); return; }
+    if (step < 0 && focus === 1 && page !== 1) { focus = 0; return; }
+  }
+  const before = page;
+  turn(step);
+  if (page !== before) focus = step > 0 ? (page === 1 ? 1 : 0) : (page === N - 1 ? 0 : 1);
+}
+const next = () => go(1), prev = () => go(-1);
+
+document.getElementById('prev').onclick = prev;
+document.getElementById('next').onclick = next;
+
+// Arrow keys follow the reading direction; up/down and space always mean back/forward
+const KEYS = { ArrowRight: S, ArrowLeft: -S, ArrowDown: 1, PageDown: 1, ' ': 1, ArrowUp: -1, PageUp: -1 };
+addEventListener('keydown', e => {
+  if (e.target.closest('button, a') && (e.key === ' ' || e.key === 'Enter')) return;
+  if (KEYS[e.key]) { e.preventDefault(); go(KEYS[e.key]); }
+});
+
+// Wheel / trackpad: one turn per gesture, so inertia scrolling cannot skip pages
+let lastWheel = 0, wheelAcc = 0, usedAt = -1;
+addEventListener('wheel', e => {
+  e.preventDefault();
+  const now = performance.now();
+  if (now - lastWheel > 220) { wheelAcc = 0; usedAt = -1; }
+  lastWheel = now;
+  if (usedAt > 0 && now - usedAt < 900) return;
+  wheelAcc += Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX * S;
+  if (Math.abs(wheelAcc) > 28) { go(Math.sign(wheelAcc)); wheelAcc = 0; usedAt = now; }
+}, { passive: false });
+
+// Swipe, or tap the side of the book you want to turn
+let down = null;
+canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY }; });
+canvas.addEventListener('pointerup', e => {
+  if (!down) return;
+  const dx = e.clientX - down.x, dy = e.clientY - down.y;
+  if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) go((dx < 0 ? 1 : -1) * S);
+  else if (Math.hypot(dx, dy) < 10) go((e.clientX > innerWidth / 2 ? 1 : -1) * S);
+  down = null;
+});
+
+/* ---------- Page sound: the uploaded file from CONFIG, or a built-in soft paper whoosh ---------- */
+let audio = null, soundOn = true, soundFile = null;
+const VOLUME = CONFIG.sound.volume; // master level, 0..1
+const soundBtn = document.getElementById('sound');
+
+// Download and decode the uploaded sound once, so every page turn plays it instantly
+async function loadSoundFile() {
+  if (!CONFIG.sound.file) return;
+  audio ??= new AudioContext();
+  for (const url of assetUrls(CONFIG.sound.file)) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      soundFile = await audio.decodeAudioData(await res.arrayBuffer());
+      return;
+    } catch { /* try the next place */ }
+  }
+  console.warn(`Sound "${CONFIG.sound.file}" could not be loaded; the built-in page sound is used instead.`);
+}
+soundBtn.onclick = () => { soundOn = !soundOn; soundBtn.setAttribute('aria-pressed', soundOn); };
+
+// Brown noise: smoother and warmer than white noise, no hiss
+function brownNoise(seconds) {
+  const rate = audio.sampleRate, buf = audio.createBuffer(1, rate * seconds, rate), d = buf.getChannelData(0);
+  let last = 0;
+  for (let i = 0; i < d.length; i++) {
+    last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02;
+    d[i] = last * 3.5;
+  }
+  return buf;
+}
+
+function softBurst(at, dur, peak, fromHz, toHz) {
+  const src = audio.createBufferSource(); src.buffer = brownNoise(dur);
+  const low = audio.createBiquadFilter(); low.type = 'lowpass'; low.Q.value = 0.3;
+  low.frequency.setValueAtTime(fromHz, at);
+  low.frequency.exponentialRampToValueAtTime(toHz, at + dur);
+  const gain = audio.createGain();
+  gain.gain.setValueAtTime(0.0001, at);
+  gain.gain.exponentialRampToValueAtTime(peak * VOLUME, at + dur * 0.35); // gentle swell, no click
+  gain.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+  src.connect(low).connect(gain).connect(audio.destination);
+  src.start(at); src.stop(at + dur);
+}
+
+function flipSound(heavy = false) {
+  if (!soundOn || VOLUME <= 0) return;
+  audio ??= new AudioContext();
+  if (audio.state === 'suspended') audio.resume(); // browsers only allow sound after a tap/click/key
+  const now = audio.currentTime;
+  if (heavy) softBurst(now + FLIP * 1.15 * 0.86, 0.35, 0.5, 260, 70); // a leather board landing on the desk
+  if (soundFile) {
+    const src = audio.createBufferSource(); src.buffer = soundFile;
+    const gain = audio.createGain(); gain.gain.value = VOLUME;
+    src.connect(gain).connect(audio.destination);
+    src.start(0, CONFIG.sound.startAt);
+    return;
+  }
+  softBurst(now + 0.05, 0.7, 0.3, 1400, 500);           // the page moving through the air
+  softBurst(now + FLIP * 0.82, 0.22, 0.18, 600, 180);   // the page settling on the stack
+}
+
+/* ---------- Pointer: camera parallax + page peek on hover ---------- */
+const mouse = { x: 0, y: 0, in: false };
+addEventListener('pointermove', e => {
+  if (e.pointerType !== 'mouse') return; // hover effects are for mice only
+  mouse.x = e.clientX / innerWidth - 0.5;
+  mouse.y = e.clientY / innerHeight - 0.5;
+  mouse.in = true;
+});
+document.addEventListener('pointerleave', () => { mouse.in = false; });
+
+/* ---------- Layout ---------- */
+const VIEW = new THREE.Vector3(0, -0.32, 1).normalize(); // looking down at the desk at a slight angle
+let camDist = 4, lookY = 0;
+// Fit the book into the free band between the header and the dock, on any screen
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  if (!w || !h) return; // hidden tab or frame (e.g. the Admin preview): wait for a real size
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  narrow = camera.aspect < 0.9;
+  const top = document.getElementById('brand').getBoundingClientRect().bottom + 14;
+  const hintBox = document.getElementById('hint').getBoundingClientRect(); // zero-size when hidden on small screens
+  const lowestUi = Math.min(document.getElementById('dock').getBoundingClientRect().top, hintBox.height ? hintBox.top : Infinity);
+  const bottom = h - lowestUi + 14;
+  const usable = Math.max(h - top - bottom, h * 0.45);
+  const half = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  const fitH = (H * 1.06 / 2) / half * (h / usable);
+  const fitW = ((narrow ? W : 2 * W) * 1.1 / 2) / (half * camera.aspect);
+  camDist = Math.max(fitH, fitW);
+  lookY = ((bottom - top) / 2) * (2 * camDist * half / h); // centre the book inside the free band
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize);
+new ResizeObserver(() => resize()).observe(canvas);
+resize();
+
+/* ---------- Interface text (from CONFIG) and caption ---------- */
+document.title = STORY.pageTitle;
+document.getElementById('loader').textContent = STORY.loading;
+document.getElementById('brand').textContent = STORY.brand;
+document.getElementById('hint').textContent = STORY.hint;
+document.getElementById('dock').setAttribute('aria-label', UI.pages);
+document.getElementById('prev').setAttribute('aria-label', UI.prev);
+document.getElementById('next').setAttribute('aria-label', UI.next);
+document.getElementById('sound').setAttribute('aria-label', UI.sound);
+
+const capNum = document.getElementById('num'), capName = document.getElementById('name'), bar = document.getElementById('bar');
+const btnPrev = document.getElementById('prev'), btnNext = document.getElementById('next');
+function setCaption() {
+  // page 0 = closed, 1 = title page, 2… = chapters, N-1 = last page, N = closed again
+  const chapter = page - 2, total = STORY.chapters.length;
+  if (page <= 1) { capNum.textContent = UI.cover; capName.textContent = STORY.brand; }
+  else if (chapter < total) { capNum.textContent = fill(UI.fileOf, { n: chapter + 1, total }); capName.textContent = STORY.chapters[chapter].title; }
+  else { capNum.textContent = UI.closed; capName.textContent = STORY.back.text; }
+  btnPrev.disabled = page === 0; btnNext.disabled = page === N;
+}
+let capTl;
+function updateCaption() {
+  gsap.to(bar, { scaleX: page / N, duration: 0.9, ease: 'power3.out', overwrite: true });
+  capTl?.kill();
+  capTl = gsap.timeline()
+    .to([capNum, capName], { autoAlpha: 0, y: -4, duration: 0.15, ease: 'power1.out' })
+    .add(setCaption)
+    .fromTo([capNum, capName], { y: 6 }, { autoAlpha: 1, y: 0, duration: 0.35, ease: 'power2.out', stagger: 0.05 });
+}
+
+/* ---------- Screen-reader copy ---------- */
+const sr = document.getElementById('sr');
+sr.append(Object.assign(document.createElement('h1'), { textContent: STORY.brand }));
+STORY.chapters.forEach(c => {
+  sr.append(Object.assign(document.createElement('h2'), { textContent: c.title }));
+  sr.append(Object.assign(document.createElement('p'), { textContent: c.body }));
+});
+
+/* ---------- Loop ---------- */
+const damp = (a, b, lambda, dt) => a + (b - a) * (1 - Math.exp(-lambda * dt));
+const cam = { x: 0, y: 0, fx: 0, turn: 0, intro: 1 };
+let prevT = performance.now();
+
+function frame(now) {
+  const dt = Math.min((now - prevT) / 1000, 0.05); prevT = now;
+
+  // Hover peek: the page under the cursor lifts a little, inviting a turn
+  const mx = mouse.x * S; // positive = the side the next page is on
+  updateBlock();
+  sheets.forEach((s, i) => {
+    let want = 0;
+    if (mouse.in && !gsap.isTweening(s)) {
+      if (i === page && page < N && mx > 0.12) want = 0.04;
+      if (i === page - 1 && page > 0 && mx < -0.12) want = -0.04;
+    }
+    if (want) s.dir = Math.sign(want);
+    s.peek = damp(s.peek, want, 8, dt);
+    bend(s, i, THREE.MathUtils.clamp(s.p + s.peek, 0, 1));
+  });
+  canvas.classList.toggle('hot', mouse.in && Math.abs(mouse.x) > 0.12);
+
+  // Slide the book so the cover, the open spread and the back cover are all centred
+  book.position.x = S * (-W / 2 * (1 - sheets[0].p) + W / 2 * sheets[N - 1].p);
+
+  // Camera: slow drift toward the cursor, the intro dolly, and a small lean-in while a page is in the air
+  const turning = Math.max(...sheets.map(s => Math.sin(s.p * Math.PI)));
+  cam.turn = damp(cam.turn, turning, 4, dt);
+  cam.x = damp(cam.x, calmCamera ? 0 : mouse.x * 0.25, 2.5, dt);
+  cam.y = damp(cam.y, calmCamera ? 0 : -mouse.y * 0.15, 2.5, dt);
+  // One-page view: glide to the page being read
+  const fx = narrow && isOpen() ? (focus === 0 ? -W / 2 : W / 2) * S : 0;
+  cam.fx = damp(cam.fx, fx, 3.2, dt);
+  const d = camDist * (1 + cam.intro * 0.6 - cam.turn * 0.05);
+  camera.position.set(VIEW.x * d + cam.x + cam.fx, VIEW.y * d + cam.y - lookY, VIEW.z * d);
+  camera.lookAt(cam.fx, -lookY, 0);
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+
+/* ---------- The detective's desk: a magnifying glass, old photographs and a pencil around the book ---------- */
+function buildProps() {
+  const brass = new THREE.MeshStandardMaterial({ color: 0xc9a45c, metalness: 1, roughness: 0.3, envMapIntensity: 1.1 });
+  const shadowed = m => { m.castShadow = m.receiveShadow = true; return m; };
+
+  // Magnifying glass: brass rim, real glass lens, dark wooden handle
+  const glass = new THREE.Group();
+  const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.165, 0.165, 0.012, 64), new THREE.MeshPhysicalMaterial({
+    color: 0xffffff, transmission: 1, roughness: 0.03, thickness: 0.06, ior: 1.5, envMapIntensity: 1.2,
+  }));
+  lens.rotation.x = Math.PI / 2;
+  const handle = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.03, 0.34, 24),
+    new THREE.MeshStandardMaterial({ color: 0x2a140a, roughness: 0.35, envMapIntensity: 0.8 })));
+  handle.position.y = -0.38;
+  const collar = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.05, 24), brass));
+  collar.position.y = -0.2;
+  glass.add(shadowed(new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.016, 20, 72), brass)), lens, handle, collar);
+  glass.position.set(-1.52, -0.32, 0.03); glass.rotation.z = -0.65;
+  scene.add(glass);
+
+  // Old photographs: night scenes, faded and slightly curled at the edges of the desk
+  const scenes = [
+    (g, r) => { // a figure under a street lamp
+      for (let i = 0; i < 7; i++) { g.fillStyle = `rgb(${18 + i * 2},${16 + i * 2},${14 + i * 2})`; g.fillRect(i * 56, 140 - r() * 90, 50, 260); }
+      const lampGlow = g.createRadialGradient(260, 120, 0, 260, 120, 150);
+      lampGlow.addColorStop(0, 'rgba(255,230,170,0.85)'); lampGlow.addColorStop(1, 'rgba(255,230,170,0)');
+      g.fillStyle = lampGlow; g.fillRect(0, 0, 380, 380);
+      g.fillStyle = '#0b0a09'; g.fillRect(258, 120, 5, 240);
+      g.beginPath(); g.ellipse(150, 230, 16, 20, 0, 0, Math.PI * 2); g.fill();   // head
+      g.fillRect(126, 208, 48, 8); g.fillRect(136, 194, 28, 16);                  // hat
+      g.beginPath(); g.moveTo(122, 250); g.lineTo(178, 250); g.lineTo(190, 380); g.lineTo(110, 380); g.fill(); // coat
+    },
+    (g) => { // light through window blinds
+      g.fillStyle = '#16120e'; g.fillRect(0, 0, 380, 380);
+      g.save(); g.translate(190, 190); g.rotate(-0.35);
+      for (let i = -6; i < 7; i++) { g.fillStyle = 'rgba(240,215,160,0.6)'; g.fillRect(-260, i * 30, 520, 13); }
+      g.restore();
+      g.fillStyle = '#0a0908'; g.fillRect(150, 160, 70, 220); g.beginPath(); g.arc(185, 140, 30, 0, Math.PI * 2); g.fill();
+    },
+    (g, r) => { // a doorway left open at night
+      g.fillStyle = '#100e0c'; g.fillRect(0, 0, 380, 380);
+      const door = g.createLinearGradient(140, 0, 240, 0);
+      door.addColorStop(0, 'rgba(230,200,140,0.9)'); door.addColorStop(1, 'rgba(230,200,140,0.35)');
+      g.fillStyle = door; g.fillRect(140, 70, 100, 310);
+      g.beginPath(); g.moveTo(140, 380); g.lineTo(240, 380); g.lineTo(380, 300); g.lineTo(380, 380); g.fillStyle = 'rgba(230,200,140,0.25)'; g.fill();
+      for (let i = 0; i < 40; i++) { g.fillStyle = `rgba(255,255,255,${r() * 0.05})`; g.fillRect(r() * 380, r() * 380, 2, 2); }
+    },
+  ];
+  [[1.5, 0.48, 0.32], [1.62, 0.02, -0.18], [1.38, -0.42, 0.12]].forEach(([x, y, rot], i) => {
+    const c = document.createElement('canvas'); c.width = 420; c.height = 500;
+    const g = c.getContext('2d'), r = rng(500 + i);
+    g.fillStyle = '#ece6d8'; g.fillRect(0, 0, 420, 500);
+    g.save(); g.translate(20, 20); g.beginPath(); g.rect(0, 0, 380, 380); g.clip();
+    scenes[i](g, r);
+    // Age: sepia wash, grain and a faded edge
+    g.fillStyle = 'rgba(120,85,40,0.22)'; g.fillRect(0, 0, 380, 380);
+    for (let k = 0; k < 5000; k++) { g.fillStyle = `rgba(${r() > 0.5 ? '255,255,255' : '0,0,0'},${r() * 0.08})`; g.fillRect(r() * 380, r() * 380, 1.5, 1.5); }
+    const fade = g.createRadialGradient(190, 190, 120, 190, 190, 270);
+    fade.addColorStop(0, 'rgba(236,230,216,0)'); fade.addColorStop(1, 'rgba(236,230,216,0.35)');
+    g.fillStyle = fade; g.fillRect(0, 0, 380, 380);
+    g.restore();
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+    const card = new THREE.MeshStandardMaterial({ color: 0xece6d8, roughness: 0.6 });
+    const photo = shadowed(new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.5, 0.003),
+      [card, card, card, card, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.35, envMapIntensity: 0.6 }), card]));
+    photo.position.set(x, y, 0.0015 + i * 0.0035); photo.rotation.z = rot;
+    scene.add(photo);
+  });
+
+  // Pencil: black lacquered hexagon, sharpened wood and graphite, brass ferrule and eraser
+  const pencil = new THREE.Group();
+  const body = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.5, 6), new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.25, envMapIntensity: 0.9 })));
+  const wood = shadowed(new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.05, 6), new THREE.MeshStandardMaterial({ color: 0xd8b48a, roughness: 0.8 })));
+  wood.position.y = 0.275;
+  const lead = new THREE.Mesh(new THREE.ConeGeometry(0.0035, 0.014, 12), new THREE.MeshStandardMaterial({ color: 0x2a2a2a, metalness: 0.6, roughness: 0.4 }));
+  lead.position.y = 0.296;
+  const ferrule = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.0125, 0.0125, 0.03, 16), brass));
+  ferrule.position.y = -0.265;
+  const eraser = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.022, 16), new THREE.MeshStandardMaterial({ color: 0xa04a3c, roughness: 0.9 })));
+  eraser.position.y = -0.29;
+  pencil.add(body, wood, lead, ferrule, eraser);
+  pencil.position.set(-1.3, 0.55, 0.012); pencil.rotation.z = 1.15;
+  scene.add(pencil);
+}
+
+/* ---------- Boot: wait for fonts, pictures and sound, draw pages, play entrance ---------- */
+const fonts = (RTL
+  ? ['700 92px "Amiri"', '400 46px "Amiri"']
+  : ['600 92px "Bodoni Moda"', '40px "Special Elite"']
+).concat('36px "Special Elite"').map(f => document.fonts.load(f).catch(() => {}));
+const pictures = [STORY.cover.image, STORY.back.image, ...STORY.chapters.map(c => c.image)]
+  .filter(Boolean).map(loadImage);
+await Promise.all([...fonts, ...pictures, loadSoundFile()]);
+buildBook();
+buildProps();
+setCaption();
+resize(); // fonts and caption are in place now, so the header and dock have their final size
+requestAnimationFrame(frame);
+document.getElementById('loader').classList.add('done');
+
+gsap.timeline({ delay: 0.2 })
+  .to(cam, { intro: 0, duration: 2.4, ease: 'expo.out' })
+  .fromTo(lamp, { intensity: 0 }, { intensity: lamp.intensity, duration: 1.6, ease: 'power2.out' }, 0)
+  .from('.brand, .hint, .dock', { autoAlpha: 0, y: 8, duration: 0.6, ease: 'power2.out', stagger: 0.1 }, 0.9);
+</script>
+</body>
+</html>

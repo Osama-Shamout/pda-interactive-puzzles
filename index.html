@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PDA Interactive Puzzles | Private Detective Agency</title>
+<meta name="description" content="Browser puzzles from Private Detective Agency detective game cases: 3D puzzles, a retro desktop OS, ciphers and story choices.">
+<style>
+  :root { --bg:#0e0b09; --card:#17120e; --line:#2c231b; --gold:#c9a35a; --text:#ece4d8; --muted:#9c8f7e; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:radial-gradient(ellipse at top,#1d1611 0%,var(--bg) 60%); color:var(--text); font-family:Georgia,"Times New Roman",serif; min-height:100vh; }
+  header { text-align:center; padding:64px 20px 36px; }
+  .seal { font-size:13px; letter-spacing:6px; color:var(--gold); text-transform:uppercase; }
+  h1 { font-size:clamp(30px,5vw,52px); font-weight:400; margin:14px 0 12px; }
+  header p { color:var(--muted); max-width:640px; margin:0 auto; line-height:1.6; font-family:system-ui,sans-serif; font-size:15px; }
+  .stats { display:flex; gap:28px; justify-content:center; margin-top:26px; font-family:system-ui,sans-serif; }
+  .stats b { display:block; font-size:24px; color:var(--gold); font-family:Georgia,serif; font-weight:400; }
+  .stats span { font-size:12px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
+  main { max-width:1180px; margin:0 auto; padding:0 20px 80px; }
+  section { margin-top:46px; }
+  h2 { font-weight:400; font-size:22px; display:flex; align-items:center; gap:14px; margin-bottom:18px; }
+  h2::after { content:""; flex:1; height:1px; background:var(--line); }
+  h2 small { color:var(--gold); font-size:13px; letter-spacing:3px; text-transform:uppercase; font-family:system-ui,sans-serif; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:18px; }
+  a.card { display:flex; flex-direction:column; background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; color:inherit; text-decoration:none; transition:transform .2s, border-color .2s; }
+  a.card:hover { transform:translateY(-4px); border-color:var(--gold); }
+  .thumb { aspect-ratio:16/10; background:#0a0806 center/cover no-repeat; position:relative; border-bottom:1px solid var(--line); }
+  .thumb.ph { display:grid; place-items:center; font-size:46px; background:linear-gradient(135deg,#221a13,#0d0a08); }
+  .badge { position:absolute; top:10px; right:10px; background:rgba(201,163,90,.92); color:#1a130c; font:600 11px system-ui,sans-serif; padding:3px 8px; border-radius:20px; letter-spacing:.5px; }
+  .body { padding:14px 16px 16px; display:flex; flex-direction:column; gap:8px; flex:1; }
+  .body h3 { font-weight:400; font-size:18px; }
+  .body p { color:var(--muted); font:14px/1.5 system-ui,sans-serif; flex:1; }
+  .tags { display:flex; flex-wrap:wrap; gap:6px; }
+  .tags span { font:11px system-ui,sans-serif; color:var(--gold); border:1px solid #3a2e22; padding:2px 8px; border-radius:20px; }
+  footer { text-align:center; color:var(--muted); font:13px/1.7 system-ui,sans-serif; padding:30px 20px 50px; border-top:1px solid var(--line); }
+  footer a { color:var(--gold); }
+</style>
+</head>
+<body>
+<header>
+  <div class="seal">Private Detective Agency</div>
+  <h1>Interactive Puzzles</h1>
+  <p>Every PDA case is a physical box of evidence. These are the online puzzles players unlock along the way: 3D scenes, a fake 1990s computer, ciphers and endings that change with the player's choice.</p>
+  <div class="stats"><div><b>3</b><span>Cases</span></div><div><b>14</b><span>Puzzles</span></div><div><b>0</b><span>Frameworks</span></div></div>
+</header>
+
+<main>
+  <section>
+    <h2><small>Case 3</small> The newest case</h2>
+    <div class="grid">
+      <a class="card" href="puzzles/case-3/star-box/"><div class="thumb ph">📦<span class="badge">3D · Three.js</span></div><div class="body"><h3>Star Box</h3><p>A wooden puzzle box in a real-time 3D room, with physically based oak and rosewood textures, HDRI lighting and GSAP animation.</p><div class="tags"><span>Three.js</span><span>GSAP</span><span>WebGL</span></div></div></a>
+      <a class="card" href="puzzles/case-3/piano/"><div class="thumb ph">🎹<span class="badge">3D · Audio</span></div><div class="body"><h3>Piano</h3><p>A 3D piano room. Every key plays a sampled grand-piano note, and players solve the puzzle at the keyboard.</p><div class="tags"><span>Three.js</span><span>Web Audio</span><span>GSAP</span></div></div></a>
+      <a class="card" href="puzzles/case-3/story/"><div class="thumb ph">📜<span class="badge">3D</span></div><div class="body"><h3>Story</h3><p>An interactive 3D story scene that walks players through the case narrative.</p><div class="tags"><span>Three.js</span><span>GSAP</span><span>Web Audio</span></div></div></a>
+      <a class="card" href="puzzles/case-3/retro-desktop/"><div class="thumb" style="background-image:url(docs/screens/case-3-retro-desktop.png)"></div><div class="body"><h3>Retro Desktop</h3><p>A suspect's 1992 computer in the browser: window manager, mail, case files, star archive and a passcode-locked archive. English / Arabic.</p><div class="tags"><span>Vanilla JS</span><span>i18n · RTL</span></div></div></a>
+      <a class="card" href="puzzles/case-3/stars/"><div class="thumb" style="background-image:url(docs/screens/case-3-stars.png)"></div><div class="body"><h3>Stellar Alignment Archive</h3><p>An interactive star chart drawn on canvas. Players enter the alignment the clues point to.</p><div class="tags"><span>Canvas</span><span>Web Audio</span></div></div></a>
+    </div>
+  </section>
+
+  <section>
+    <h2><small>Case 2</small> Seven puzzles and a final choice</h2>
+    <div class="grid">
+      <a class="card" href="puzzles/case-2/clock-pattern/"><div class="thumb ph">🕰️</div><div class="body"><h3>Clock Pattern</h3><p>A pattern-lock puzzle drawn on canvas, with hint, reset and answer flow.</p><div class="tags"><span>Canvas</span><span>Vanilla JS</span></div></div></a>
+      <a class="card" href="puzzles/case-2/william-box/"><div class="thumb" style="background-image:url(docs/screens/case-2-william-box.png)"></div><div class="body"><h3>William's Box</h3><p>Find the password for the box hidden under a Rembrandt painting. Hints and an attempt counter included.</p><div class="tags"><span>Vanilla JS</span></div></div></a>
+      <a class="card" href="puzzles/case-2/wired-house/"><div class="thumb" style="background-image:url(docs/screens/case-2-wired-house.png)"></div><div class="body"><h3>Wired House</h3><p>A room puzzle: spot what's strange in the house.</p><div class="tags"><span>Vanilla JS</span><span>EN / AR</span></div></div></a>
+      <a class="card" href="puzzles/case-2/hotel/"><div class="thumb" style="background-image:url(docs/screens/case-2-hotel.png)"></div><div class="body"><h3>Hotel</h3><p>Search the eleventh-floor guest list for the right room.</p><div class="tags"><span>Vanilla JS</span></div></div></a>
+      <a class="card" href="puzzles/case-2/password/"><div class="thumb" style="background-image:url(docs/screens/case-2-password.png)"></div><div class="body"><h3>Cylinder Code</h3><p>Work out the secret code that opens the cylindrical box.</p><div class="tags"><span>Vanilla JS</span><span>EN / AR</span></div></div></a>
+      <a class="card" href="puzzles/case-2/find-the-body/"><div class="thumb" style="background-image:url(docs/screens/case-2-find-the-body.png)"></div><div class="body"><h3>Find the Body</h3><p>A chain of questions. Each right answer unlocks the next envelope.</p><div class="tags"><span>Vanilla JS</span></div></div></a>
+      <a class="card" href="puzzles/case-2/final-choice/"><div class="thumb" style="background-image:url(docs/screens/case-2-final-choice.png)"></div><div class="body"><h3>Final Choice</h3><p>The ending branches on the player's decision, with two outcomes.</p><div class="tags"><span>Vanilla JS</span></div></div></a>
+    </div>
+  </section>
+
+  <section>
+    <h2><small>Case 1</small> Where it started</h2>
+    <div class="grid">
+      <a class="card" href="puzzles/case-1/mystery-box/"><div class="thumb ph">🗝️</div><div class="body"><h3>Mystery Box</h3><p>Click the symbols in the correct order to open the box.</p><div class="tags"><span>Vanilla JS</span></div></div></a>
+      <a class="card" href="puzzles/case-1/sleeping-pill/"><div class="thumb" style="background-image:url(docs/screens/case-1-sleeping-pill.png)"></div><div class="body"><h3>Sleeping Pill</h3><p>Find the clue hidden in the case files that shows what happened on the night of the incident.</p><div class="tags"><span>Vanilla JS</span><span>EN / AR</span></div></div></a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  Designed and built by <a href="https://github.com/Osama-Shamout">Osama Shamout</a>, co-founder &amp; lead developer of <a href="https://pdacases.com">Private Detective Agency</a>.<br>
+  © 2026 Private Detective Agency. All rights reserved.
+</footer>
+</body>
+</html>

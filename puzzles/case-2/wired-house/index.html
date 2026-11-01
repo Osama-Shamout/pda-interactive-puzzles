@@ -1,0 +1,402 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لغز الغرفة / Room Puzzle</title>
+
+<style>
+    /* Reset & Base */
+    body {
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+    }
+
+    /* Main Game Container */
+    .game-container {
+        position: relative;
+        width: 100%;
+        max-width: 800px;
+        background: #000;
+        box-shadow: 0 0 50px rgba(0,0,0,0.8);
+        overflow: hidden;
+    }
+
+    /* The Image */
+    #scene-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0;
+        transition: opacity 1s ease-in-out;
+    }
+
+    /* UI Overlay - Centered */
+    .ui-layer {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        z-index: 10;
+        transition: opacity 0.5s ease;
+    }
+
+    /* Input Field Styling */
+    .input-wrapper {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 60%;
+        max-width: 400px;
+    }
+
+    input[type="text"] {
+        width: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        border: 1px solid rgba(255, 170, 0, 0.4);
+        border-radius: 20px;
+        padding: 12px 15px;
+        color: #fff;
+        font-size: 18px;
+        text-align: center;
+        outline: none;
+        transition: all 0.3s;
+        box-sizing: border-box;
+    }
+
+    input[type="text"]:focus {
+        border-color: #ffaa00;
+        box-shadow: 0 0 15px rgba(255, 170, 0, 0.3);
+    }
+
+    /* Action Buttons Base */
+    .submit-btn, .reveal-btn {
+        margin-top: 10px;
+        background: rgba(255, 170, 0, 0.2);
+        border: 1px solid #ffaa00;
+        color: #ffaa00;
+        padding: 8px 15px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: all 0.3s;
+        z-index: 12;
+    }
+
+    .submit-btn:hover, .reveal-btn:hover {
+        background: #ffaa00;
+        color: #000;
+    }
+
+    .reveal-btn {
+        border-color: #ff6b6b;
+        color: #ff6b6b;
+        background: rgba(255, 107, 107, 0.15);
+    }
+
+    .reveal-btn:hover {
+        background: #ff6b6b;
+        color: #fff;
+    }
+
+    /* Hint Button */
+    .pda-btn {
+        margin-top: 20px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 170, 0, 0.5);
+        color: rgba(255, 200, 80, 0.9);
+        padding: 8px 20px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: all 0.3s;
+        backdrop-filter: blur(4px);
+    }
+
+    .pda-btn:hover {
+        background: rgba(255, 170, 0, 0.2);
+        border-color: #ffd166;
+        color: #fff;
+    }
+
+    /* Hint Box */
+    .pda-hint-box {
+        position: absolute;
+        top: 105%; 
+        left: 50%;
+        transform: translateX(-50%) translateY(-10px);
+        background: rgba(0,0,0,0.85);
+        border: 1px solid rgba(255,170,0,0.35);
+        border-radius: 20px;
+        padding: 10px 22px;
+        color: rgba(255,200,80,0.95);
+        font-size: 15px;
+        letter-spacing: 0.5px;
+        text-align: center;
+        z-index: 20;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        max-width: 90%;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.4s ease, transform 0.4s ease;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+        white-space: normal;
+    }
+
+    .pda-hint-box.visible {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0px);
+    }
+
+    /* Point Marker */
+    .point-marker {
+        position: absolute;
+        top: 50%;
+        left: 42.5%;
+        width: 25px;
+        height: 25px;
+        border-radius: 50%;
+        background-color: #ffd166;
+        cursor: pointer;
+        box-shadow: 0 0 10px rgba(255, 209, 102, 0.8);
+        transition: all 0.3s ease;
+        transform: translate(-50%, -50%);
+        z-index: 10;
+        display: none;
+    }
+
+    .point-marker::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        border-radius: 50%;
+        background-color: transparent;
+        border: 2px solid #ffd166;
+        animation: pulse 2s infinite;
+        box-sizing: border-box;
+    }
+
+    .point-marker:hover {
+        transform: translate(-50%, -50%) scale(1.2);
+        box-shadow: 0 0 15px rgba(255, 209, 102, 1);
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); opacity: 1; }
+        100% { transform: scale(2); opacity: 0; }
+    }
+
+    /* Utilities */
+    .hidden {
+        opacity: 0;
+        pointer-events: none;
+    }
+    
+    #feedback {
+        margin-top: 10px;
+        color: #ff6b6b;
+        white-space: nowrap;
+        text-shadow: 0 2px 4px black;
+        font-size: 16px;
+        min-height: 24px;
+    }
+</style>
+
+<div class="game-container">
+    <img id="scene-img" src="" alt="Room Scene">
+
+    <div class="ui-layer" id="ui-layer">
+        <h2 id="questionTitle" style="color: white; text-shadow: 0 2px 4px black; text-align: center; margin-bottom: 15px;"></h2>
+
+        <div class="input-wrapper">
+            <input type="text" id="answerInput" autocomplete="off">
+            
+            <button class="submit-btn" id="submitBtn" onclick="checkAnswer()"></button>
+            <button class="reveal-btn" id="revealBtn" onclick="revealAnswer()" style="display: none;"></button>
+            
+            <div id="feedback"></div>
+
+            <button class="pda-btn" id="pdaBtnHint">✦ Hint</button>
+            <div class="pda-hint-box" id="pdaHintBox">...</div>
+        </div>
+    </div>
+
+    <a href="https://pdacases.com/after-clock/" target="_blank" class="point-marker" id="marker"></a>
+</div>
+
+<script>
+    // --- Language Detection ---
+    const isArabic = window.location.pathname.includes('/ar/');
+
+    // --- Image Assets Configuration ---
+    const imageAssets = {
+        ar: {
+            first: "https://pdacases.com/wp-content/uploads/2026/06/2-new-scaled-1.png",
+            second: "https://pdacases.com/wp-content/uploads/2026/06/2-open-new-scaled-1.png"
+        },
+        en: {
+            first: "https://pdacases.com/wp-content/uploads/2026/09/livingRoom-english-1.png",
+            second: "https://pdacases.com/wp-content/uploads/2026/09/livingRoom-open-english-1.png"
+        }
+    };
+
+    const currentImages = isArabic ? imageAssets.ar : imageAssets.en;
+
+    // Set initial image source
+    const sceneImg = document.getElementById("scene-img");
+    sceneImg.src = currentImages.first;
+
+    // --- Localization Content ---
+    const i18n = {
+        ar: {
+            title: "ما هو الشيء الغريب في المنزل؟",
+            placeholder: "اكتب إجابتك هنا ...",
+            submit: "إرسال",
+            revealBtn: "إظهار الإجابة",
+            revealedText: "الإجابة الصحيحة هي: الساعة",
+            wrong: "إجابة خاطئة، حاول مجدداً.",
+            hints: [
+                "تأكد من صياغة الجواب",
+                "لعل الشيء مرتبط بقضية سرقة جاردنر",
+                "ركز بصورة الصالة",
+                "تذكر تاريخ السرقة"
+            ],
+            answers: [
+                "ساعة الجد", "ساعة الجدة", "الساعة", "الساعه", "العقارب", "عقارب", "عقرب", "العقرب", 
+                "عقارب الساعة", "عقارب الساعه", "عقرب الساعة", "عقرب الساعه", "عقرب الدقائق", "عقرب الدقايق", 
+                "عقرب الساعات", "الساعة الخشبية", "الساعه الخشبية", "الساعة الخشبيه", "الساعه الخشبيه", 
+                "الساعة القديمة", "الساعه القديمة", "الساعة القديمه", "الساعه القديمه", "الساعة الأثرية", 
+                "الساعة الاثرية", "الساعه الأثرية", "الساعه الاثرية", "الساعة العتيقة", "الساعه العتيقة", 
+                "الساعة القديمة الخشبية", "الساعه القديمة الخشبية", "الساعة القديمه الخشبية", "الساعه القديمه الخشبية", 
+                "ساعة الحائط", "ساعة الحايط", "الساعة الحائط", "الساعه الحائط", "الساعة المعلقة", "الساعة المعلّقة", 
+                "الساعه المعلقة", "الساعه المعلّقة", "الساعة على الحائط", "الساعة على الحائط", "الساعة على الحايط", 
+                "الساعه على الحايط", "الساعة الموجودة على الحائط", "الساعه الموجودة على الحائط", "الساعة الموجودة على الحايط", 
+                "الساعه الموجودة على الحايط", "الساعة التي على الحائط", "الساعه التي على الحائط", "الساعة التي على الحايط", 
+                "الساعه التي على الحايط", "الساعة الكبيرة", "الساعه الكبيرة", "الساعة الكبيره", "الساعة الكبيره", 
+                "الساعة الدائرية", "الساعة الدائريه", "الساعه الدائرية", "الساعه الدائريه", "الساعة البنية", 
+                "الساعة البنيه", "الساعه البنية", "الساعه البنيه", "عقارب الساعة الخشبية", "عقارب الساعة الخشبيه", 
+                "عقارب الساعه الخشبية", "عقارب الساعه الخشبيه", "عقارب ساعة الجد", "عقارب ساعة الجدة", 
+                "عقارب الساعة القديمة", "عقارب الساعة القديمه", "عقارب الساعه القديمة", "عقارب الساعه القديمه", 
+                "عقارب الساعة الاثرية", "عقارب الساعة الأثرية", "عقارب الساعه الاثرية", "عقارب الساعه الأثرية", 
+                "العقارب في الساعة", "العقارب في الساعه", "الساعة داخل الصورة", "الساعه داخل الصورة", 
+                "الساعة في الصورة", "الساعه في الصورة", "ساعة قديمة", "ساعة قديمه", "ساعة خشبية", "ساعة خشبيه", 
+                "ساعة اثرية", "ساعة أثرية", "ساعة عتيقة", "ساعة حائط", "ساعة حايط", "الساعة العائلية", 
+                "الساعه العائلية", "الساعة التراثية", "الساعة التراثيه", "الساعه التراثية", "الساعه التراثيه", 
+                "الساعة الكلاسيكية", "الساعة الكلاسيكيه", "الساعه الكلاسيكية", "الساعه الكلاسيكيه", "العقرب", "العقربين"
+            ]
+        },
+        en: {
+            title: "What is the strange thing in the house?",
+            placeholder: "Type your answer here...",
+            submit: "Submit",
+            revealBtn: "Show Answer",
+            revealedText: "The correct answer is: Clock",
+            wrong: "Wrong answer, try again.",
+            hints: [
+                "Make sure the answer is phrased correctly.",
+                "Perhaps the thing is related to the Gardner theft case.",
+                "Focus on the living room picture.",
+                "Remember the date of the theft."
+            ],
+            answers: [
+                "clock", "the clock", "grandfather clock", "wall clock", "hands", "clock hands", 
+                "the hands", "hand", "hour hand", "minute hand", "wooden clock", "old clock", 
+                "ancient clock", "vintage clock", "antique clock", "the clock hands", "hands of the clock"
+            ]
+        }
+    };
+
+    const lang = isArabic ? i18n.ar : i18n.en;
+
+    // --- DOM Setup ---
+    document.getElementById("questionTitle").innerText = lang.title;
+    document.getElementById("answerInput").placeholder = lang.placeholder;
+    document.getElementById("submitBtn").innerText = lang.submit;
+    document.getElementById("revealBtn").innerText = lang.revealBtn;
+
+    // --- Audio Config ---
+    const transitionSound = new Audio("https://pdacases.com/wp-content/uploads/2026/05/dragging-Stone.mp3");
+
+    // --- Hint Logic ---
+    let hintIndex = 0;
+    let hintTimer = null;
+    const hintBox = document.getElementById("pdaHintBox");
+
+    document.getElementById("pdaBtnHint").addEventListener("click", () => {
+        hintBox.textContent = lang.hints[hintIndex++ % lang.hints.length];
+        hintBox.classList.remove("visible");
+        
+        void hintBox.offsetWidth; 
+        
+        hintBox.classList.add("visible");
+        clearTimeout(hintTimer);
+        hintTimer = setTimeout(() => hintBox.classList.remove("visible"), 3500);
+    });
+
+    // --- Game Logic ---
+    let failedAttempts = 0;
+
+    function triggerSuccess() {
+        const uiLayer = document.getElementById("ui-layer");
+        uiLayer.classList.add("hidden");
+
+        sceneImg.style.opacity = 1;
+
+        setTimeout(() => {
+            transitionSound.currentTime = 0;
+            transitionSound.play();
+
+            sceneImg.style.opacity = 0;
+
+            setTimeout(() => {
+                sceneImg.src = currentImages.second;
+                sceneImg.style.opacity = 1;
+                document.getElementById("marker").style.display = 'block';
+            }, 1000);
+
+        }, 2500);
+    }
+
+    function checkAnswer() {
+        const inputField = document.getElementById("answerInput");
+        const feedback = document.getElementById("feedback");
+        const userAnswer = inputField.value.trim().toLowerCase();
+
+        const isMatch = lang.answers.some(ans => ans.toLowerCase() === userAnswer) ||
+                        userAnswer.includes("عقارب") || userAnswer.includes("الساعة") || 
+                        userAnswer.includes("clock") || userAnswer.includes("hand");
+
+        if (isMatch) {
+            triggerSuccess();
+        } else {
+            failedAttempts++;
+            feedback.innerText = lang.wrong;
+            inputField.value = "";
+            inputField.focus();
+
+            if (failedAttempts >= 3) {
+                document.getElementById("revealBtn").style.display = "inline-block";
+            }
+        }
+    }
+
+    function revealAnswer() {
+        const feedback = document.getElementById("feedback");
+        feedback.innerText = lang.revealedText;
+        
+        setTimeout(() => {
+            triggerSuccess();
+        }, 1500);
+    }
+
+    document.getElementById("answerInput").addEventListener("keypress", function (e) {
+        if (e.key === 'Enter') {
+            checkAnswer();
+        }
+    });
+</script>

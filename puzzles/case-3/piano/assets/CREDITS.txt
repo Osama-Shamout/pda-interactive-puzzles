@@ -1,0 +1,15 @@
+Assets in this folder
+
+Photo textures and lighting: CC0 (public domain), no attribution required.
+  wall-*.jpg     Painted Plaster Wall (Poly Haven)   https://polyhaven.com/a/painted_plaster_wall
+  floor-*.jpg    Wood Floor Worn (Poly Haven)        https://polyhaven.com/a/wood_floor_worn
+  table-*.jpg    Dark Wood (Poly Haven)              https://polyhaven.com/a/dark_wood
+  room.hdr       Fireplace HDRI (Poly Haven)         https://polyhaven.com/a/fireplace
+
+Piano recordings (piano/*.mp3):
+  Salamander Grand Piano by Alexander Holm, licensed CC BY 3.0
+  https://creativecommons.org/licenses/by/3.0/
+  Files as distributed by the Tone.js project (https://tonejs.github.io/audio/salamander/).
+  CC BY requires this credit to stay with the files.
+
+Upload this whole folder with index.html in the Admin (a .zip of "puzzle 2", or one by one).

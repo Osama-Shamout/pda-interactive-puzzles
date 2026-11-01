@@ -1,0 +1,339 @@
+/* ─── Base reset ─── */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+
+    justify-content: center;
+    align-items: center;
+}
+
+/* ─── Image Wrapper ─── */
+.pda-image-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.pda-main-image {
+    width: 100%;
+    display: block;
+    border-radius: 16px;
+}
+
+/* ─── Glowing Point Marker ─── */
+.point-marker {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background-color: #ffd166;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(255, 209, 102, 0.8);
+    transition: all 0.3s ease;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+}
+
+.point-marker::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-color: transparent;
+    border: 2px solid #ffd166;
+    animation: pulse 2s infinite;
+    box-sizing: border-box;
+}
+
+.point-marker:hover {
+    transform: translate(-50%, -50%) scale(1.2);
+    box-shadow: 0 0 15px rgba(255, 209, 102, 1);
+}
+
+@keyframes pulse {
+    0%   { transform: scale(1);   opacity: 1; }
+    100% { transform: scale(2.5); opacity: 0; }
+}
+
+/* ─── Popup Overlay ─── */
+.pda-popup-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 999999 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+}
+
+.pda-popup-overlay.visible {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.pda-popup-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 700px;
+    transform: translateY(24px) scale(0.97);
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pda-popup-overlay.visible .pda-popup-wrapper {
+    transform: translateY(0) scale(1);
+}
+
+/* ─── Close Button ─── */
+.pda-popup-close {
+    position: absolute;
+    top: -14px;
+    right: -14px;
+    z-index: 50;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 170, 0, 0.45);
+    background: rgba(10, 10, 15, 0.92);
+    color: rgba(255, 200, 80, 0.9);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+}
+
+.pda-popup-close:hover {
+    background: rgba(255, 170, 0, 0.15);
+    box-shadow: 0 0 14px rgba(255, 170, 0, 0.35);
+}
+
+.pda-popup-close:active { transform: scale(0.92); }
+
+/* ─── Pattern Wrap ─── */
+.pda-pattern-wrap {
+    --accent-color: #ffaa0078;
+    --accent-glow: #ffaa00;
+    width: 100%;
+
+}
+
+.pda-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 700 / 850;
+    background:
+        linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.25)),
+        url('https://pdacases.com/wp-content/uploads/2026/05/009164.jpg') center/cover;
+    border-radius: 24px;
+    box-shadow:
+        0 20px 45px rgba(0,0,0,0.45),
+        inset 0 0 0 1px rgba(255,255,255,0.08);
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.09);
+    min-height: 400px;
+}
+
+/* ─── Container Background Text Fix ─── */
+.pda-container::after {
+    content: var(--pda-bg-text, "صل الرؤوس ببعضها بدءا من الرجل الذي في مقدمة السفينة، مرورا بالرجل أشيب الشعر، وانتهاء عنده. ثم ابدأ من الرجل الذي يمسك المجدفة، وتوقف عند العجوز الذي خلف رامبرانت، ولا تمر على الرأس نفسه مرتين");
+    position: absolute;
+    bottom: 10px;
+    width: 90%;
+    left: 5%;
+    text-align: center;
+    color: rgba(255,255,255,0.28);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    pointer-events: none;
+    line-height: 1.3;
+}
+
+/* ─── Points ─── */
+.pda-point {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: rgba(255,255,255,0.1);
+    -webkit-clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    transform: translate(-50%,-50%);
+    transition: 0.2s;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.pda-point.active {
+    background: var(--accent-color);
+    transform: translate(-50%,-50%) scale(1.8);
+    box-shadow: 0 0 20px var(--accent-color);
+}
+
+canvas.pda-canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 1;
+    filter: drop-shadow(0 0 4px var(--accent-glow));
+}
+
+/* ─── Button Bar ─── */
+.pda-btn-bar {
+    position: absolute;
+    top: 4%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 10;
+}
+
+.pda-btn {
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    padding: 7px 16px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,170,0,0.4);
+    background: rgba(0,0,0,0.55);
+    color: rgba(255,200,80,0.9);
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: background 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.1s;
+    white-space: nowrap;
+}
+
+.pda-btn:hover {
+    background: rgba(255,170,0,0.12);
+    border-color: rgba(255,170,0,0.75);
+    box-shadow: 0 0 12px rgba(255,170,0,0.25);
+}
+
+.pda-btn:active { transform: scale(0.95); }
+
+/* ─── Hint Box ─── */
+.pda-hint-box {
+    position: absolute;
+    left: 50%;
+    top: 140px;
+    transform: translateX(-50%) translateY(-10px);
+    background: rgba(0,0,0,0.72);
+    border: 1px solid rgba(255,170,0,0.35);
+    border-radius: 14px;
+    padding: 10px 22px;
+    color: rgba(255,200,80,0.95);
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-align: center;
+    z-index: 20;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    max-width: 80%;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+
+.pda-hint-box.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0px);
+}
+
+/* ─── Answer Overlay ─── */
+.pda-answer-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 30;
+	display: flex;
+	justify-content: center;
+  	align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    border-radius: 24px;
+}
+
+.pda-answer-overlay.visible {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.pda-answer-modal {
+    background: rgba(10,10,15,0.92);
+    border: 1px solid rgba(255,170,0,0.35);
+    border-radius: 20px;
+    padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    min-width: 240px;
+}
+
+.pda-answer-modal label {
+    color: rgba(255,200,80,0.85);
+    font-size: 14px;
+    letter-spacing: 2px;
+}
+
+.pda-answer-modal input {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,170,0,0.3);
+    border-radius: 10px;
+    color: rgba(255,220,100,0.95);
+    font-size: 15px;
+    padding: 8px 14px;
+    outline: none;
+    width: 100%;
+    letter-spacing: 1px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pda-answer-modal input:focus {
+    border-color: rgba(255,170,0,0.7);
+    box-shadow: 0 0 10px rgba(255,170,0,0.2);
+}
+
+.pda-modal-btns {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+.pda-modal-btns .pda-btn { flex: 1; text-align: center; }
+
+/* ─── Responsive ─── */
+@media (max-width: 480px) {
+    .pda-point { width: 8px; height: 8px; }
+    .pda-point.active { transform: translate(-50%,-50%) scale(2); }
+    .pda-btn { font-size: 8px; padding: 6px 11px; }
+    .pda-container::after { font-size: 8px; }
+    .pda-popup-close { top: -10px; right: -4px; }
+}

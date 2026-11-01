@@ -1,0 +1,1099 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e0b09">
+<title>Case 3</title>
+<script>
+  // Language from the address: /ar/… (or …/ar, or ?lang=ar) = Arabic, everything else = English
+  if (/^\/ar(\/|$)|\/ar\/?$/.test(location.pathname) || new URLSearchParams(location.search).get('lang') === 'ar') {
+    document.documentElement.lang = 'ar';
+    document.documentElement.dir = 'rtl';
+  }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cormorant+Garamond:ital,wght@1,600&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  :root { --room: #0e0b09; --ink: #e9dcc4; --dim: rgba(233, 220, 196, 0.6); --brass: #c9a45c; --ease: cubic-bezier(0.2, 0, 0, 1); }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; }
+  html { -webkit-font-smoothing: antialiased; }
+  body {
+    background: var(--room); color: var(--ink);
+    font-family: "Special Elite", "Courier New", monospace;
+    -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none;
+  }
+  html[lang="ar"] body { font-family: "Amiri", serif; }
+  #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: manipulation; }
+  #gl.hot { cursor: pointer; }
+
+  .label {
+    position: fixed; z-index: 2; margin: 0; font-weight: 400; font-size: 14px; color: var(--dim);
+    top: max(20px, env(safe-area-inset-top)); inset-inline-start: max(20px, env(safe-area-inset-left));
+  }
+  html[lang="ar"] .label { font-size: 18px; }
+  .status {
+    position: fixed; z-index: 2; left: 0; right: 0; margin: 0; padding: 0 16px; text-align: center;
+    bottom: max(20px, calc(env(safe-area-inset-bottom) + 10px));
+    font-size: 15px; color: var(--ink); text-shadow: 0 1px 8px rgba(0,0,0,0.9); pointer-events: none;
+    transition: opacity 0.4s var(--ease);
+  }
+  html[lang="ar"] .status { font-size: 19px; }
+
+  .loader {
+    position: fixed; inset: 0; z-index: 5; display: grid; place-items: center;
+    background: var(--room); color: var(--dim); font-size: 15px;
+    transition: opacity 0.8s var(--ease), visibility 0.8s;
+  }
+  .loader.done { opacity: 0; visibility: hidden; }
+
+  /* Photographic finish: lens vignette and a whisper of film grain over the 3D scene */
+  .film {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background:
+      radial-gradient(ellipse 75% 70% at 50% 45%, transparent 55%, rgba(0,0,0,0.55) 100%),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0.09 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+
+  /* ---------- Hints ---------- */
+  .hints {
+    position: fixed; z-index: 3; display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+    inset-inline-end: max(16px, env(safe-area-inset-right));
+    bottom: max(16px, calc(env(safe-area-inset-bottom) + 8px));
+    width: min(330px, calc(100vw - 32px)); pointer-events: none;
+  }
+  .hints > * { pointer-events: auto; }
+  .hint-list {
+    list-style: none; margin: 0; padding: 4px; width: 100%;
+    display: flex; flex-direction: column; gap: 10px;
+    max-height: min(46vh, 420px); overflow-y: auto; overscroll-behavior: contain;
+    scrollbar-width: thin; scrollbar-color: rgba(233,220,196,0.3) transparent;
+  }
+  .hint-list[hidden] { display: none; }
+  .card {
+    background: #efe3c8; color: #2a1f14; border-radius: 3px; padding: 12px 14px;
+    font-size: 14px; line-height: 1.5; text-wrap: pretty;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.4) inset, 0 10px 24px rgba(0,0,0,0.5);
+  }
+  .card:nth-child(odd) { rotate: -0.8deg; } .card:nth-child(even) { rotate: 0.6deg; }
+  .card .tag { display: block; font-size: 12px; color: #8a3b1e; margin-bottom: 4px; }
+  html[lang="ar"] .card { font-size: 17px; line-height: 1.7; }
+  html[lang="ar"] .card .tag { font-size: 15px; }
+  .answer .grid {
+    direction: ltr; display: grid; grid-template-columns: repeat(4, 30px); gap: 5px; margin-top: 10px;
+  }
+  .answer .grid span {
+    width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+    background: rgba(42,31,20,0.12); font: 13px "Special Elite", monospace; color: #2a1f14;
+  }
+  .answer .grid span.on { background: #8a3b1e; color: #efe3c8; }
+  .hint-actions { display: flex; gap: 8px; }
+  .pill {
+    height: 44px; padding: 0 18px; border: 0; border-radius: 999px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+    font: inherit; font-size: 15px; color: var(--ink);
+    background: rgba(24, 18, 13, 0.72);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    box-shadow: 0 0 0 1px rgba(233,220,196,0.14), 0 8px 22px rgba(0,0,0,0.45);
+    transition-property: background-color, scale; transition-duration: 0.15s; transition-timing-function: var(--ease);
+  }
+  html[lang="ar"] .pill { font-size: 18px; }
+  .pill:hover { background: rgba(48, 36, 26, 0.85); }
+  .pill:active { scale: 0.96; }
+  .pill:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+  .pill[hidden] { display: none; }
+  .pill .count { font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }
+  .pill.quiet { background: transparent; box-shadow: none; color: var(--dim); padding: 0 10px; }
+  @media (max-width: 640px) {
+    .status { bottom: max(76px, calc(env(safe-area-inset-bottom) + 70px)); }
+  }
+
+  /* Keyboard and screen-reader controls for the 3D buttons and beads */
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+<script type="importmap">
+  { "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  } }
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+</head>
+<body>
+  <div class="loader" id="loader">…</div>
+  <h1 class="label" id="label"></h1>
+  <canvas id="gl" aria-hidden="true"></canvas>
+  <div class="film" aria-hidden="true"></div>
+  <p class="status" id="status" aria-live="polite"></p>
+
+  <aside class="hints" id="hints">
+    <ol class="hint-list" id="hintList" aria-live="polite"></ol>
+    <div class="hint-actions">
+      <button class="pill quiet" id="hintToggle" type="button" hidden></button>
+      <button class="pill" id="hintBtn" type="button"></button>
+      <button class="pill" id="answerBtn" type="button" hidden></button>
+    </div>
+  </aside>
+
+  <div class="sr">
+    <div id="pegButtons" role="group"></div>
+    <div id="beadButtons" role="group"></div>
+  </div>
+
+<script type="module">
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+
+/* =====================================================================
+   CONFIG: edit everything here. كل المحتوى بتعدله من هون.
+   Buttons are numbered left to right, top (far side) to bottom (near side):
+      1  2  3  4
+      5  6  7  8
+      9 10 11 12
+     13 14 15 16
+   Keep `sequence` the same as on the stars page.
+   ===================================================================== */
+const CONFIG = {
+  sequence: [13, 6, 15, 4, 7],       // EXAMPLE order: change it to the real one
+  starIds: ['3728', '8273'],         // only shown in the answer; keep the same as `ids` on the stars page
+  showNumbers: false,                // true = burn the numbers into the buttons (handy while testing)
+  misbaha: { groups: [3, 7, 2, 8] }, // beads before each separator, counted from the left
+  sounds: {
+    // Uploaded recordings (e.g. 'wood-click.wav'); '' = the built-in sound, modelled on the real object
+    press: '',   // a button pushed down
+    pop: '',     // a button springing back up (plays once per button when the order is wrong)
+    latch: '',   // the catch releasing when the order is right
+    creak: '',   // the lid hinge opening
+    thud: '',    // the lid coming to rest
+    bead: '',    // two beads knocking together
+    paper: '',   // a hint card appearing
+    volume: 0.8, // 0 = silent, 1 = full
+  },
+  textures: true, // false = use the drawn wood instead of the photo textures in the assets folder
+  en: {
+    pageTitle: 'Case 3',
+    label: 'Case 3',
+    loading: 'Setting the table…',
+    engraving: 'Then I swear by the positions of the stars',
+    button: 'Button {n}',
+    buttons: 'Wooden box with sixteen buttons',
+    beads: 'Prayer beads. Mark a bead while you count.',
+    bead: 'Bead {n}',
+    wrong: 'The buttons spring back up.',
+    solved: 'Something clicks inside the box.',
+    reveal: { title: 'The box is open', text: 'Put the next clue here. Edit CONFIG.reveal in the code.', image: '' },
+    // Hints appear one at a time; after the last one the Hint button becomes Show answer
+    hints: [
+      'The prayer beads are not only for prayer. Count them, and notice where they stop.',
+      'Each silver separator closes a group. The number of beads before it is one digit.',
+      'Four digits make a Star ID. Somewhere on the computer there is an archive of the stars.',
+      'The yellow marks split the sky into a 4 × 4 grid, just like the box. Start where α shines.',
+    ],
+    answer: 'Star ID {ids}. Press the buttons in this order:',
+    ui: { hint: 'Hint', showAnswer: 'Show answer', answerTitle: 'Answer', hintTitle: 'Hint {n} of {total}', hide: 'Hide', show: 'Hints' },
+  },
+  ar: {
+    pageTitle: 'القضية 3',
+    label: 'القضية 3',
+    loading: 'جارٍ تجهيز الطاولة…',
+    engraving: 'فَلَا أُقْسِمُ بِمَوَاقِعِ النُّجُومِ',
+    button: 'الزر {n}',
+    buttons: 'صندوق خشبي بستة عشر زراً',
+    beads: 'مسبحة. علّم الخرزة أثناء العد.',
+    bead: 'الخرزة {n}',
+    wrong: 'ترتد الأزرار إلى الأعلى.',
+    solved: 'شيء ما ينفتح داخل الصندوق.',
+    reveal: { title: 'انفتح الصندوق', text: 'ضع الدليل التالي هنا. عدّل CONFIG.reveal في الكود.', image: '' },
+    hints: [
+      'المسبحة ليست للتسبيح فقط. عُدّ خرزاتها، ولاحظ أين تتوقف.',
+      'كل فاصل فضي يُغلق مجموعة. عدد الخرزات قبله رقم واحد.',
+      'أربعة أرقام تصنع رقم نجم. في مكان ما على الكمبيوتر يوجد أرشيف للنجوم.',
+      'العلامات الصفراء تقسم السماء إلى شبكة ٤ × ٤ مثل الصندوق تماماً. ابدأ من حيث تلمع α.',
+    ],
+    answer: 'رقم النجم {ids}. اضغط الأزرار بهذا الترتيب:',
+    ui: { hint: 'تلميح', showAnswer: 'أظهر الحل', answerTitle: 'الحل', hintTitle: 'تلميح {n} من {total}', hide: 'إخفاء', show: 'التلميحات' },
+  },
+};
+/* ======================== end of CONFIG ======================== */
+
+const LANG = document.documentElement.lang === 'ar' ? 'ar' : 'en';
+const RTL = LANG === 'ar';
+const T = CONFIG[LANG];
+const fill = (text, vars) => text.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
+const $ = id => document.getElementById(id);
+const touch = matchMedia('(pointer: coarse)').matches;
+// The motion is part of the puzzle, so it always plays. Reduced-motion users only lose the camera drift.
+const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+document.title = T.pageTitle;
+$('label').textContent = T.label;
+$('loader').textContent = T.loading;
+
+/* ---------- Uploaded files: on /ar/slug/ they usually sit beside the English page ---------- */
+function assetUrls(name) {
+  const here = new URL(name, location.href).href;
+  const english = new URL(name, location.origin + location.pathname.replace(/^\/ar(?=\/)/, '') + location.search).href;
+  return [...new Set([english, here])];
+}
+
+/* ---------- Sounds ----------
+   Uploaded recordings (CONFIG.sounds) are used when given. Otherwise each sound is modelled on the real
+   object: a short noise "strike" rings through resonators tuned to how wood, metal or amber vibrates.
+   Every sound is rendered once offline, normalised, and played back with tiny pitch changes so repeats
+   never sound identical. */
+let audio = null;
+const getAudio = () => {
+  audio ??= new AudioContext();
+  if (audio.state === 'suspended') audio.resume();
+  return audio;
+};
+const SR = 44100;
+
+// A struck object: noise burst → resonant modes [frequency Hz, gain, ring time s]
+function strike(ctx, out, at, { modes, hp = 300, burst = 0.004, body = 1 }) {
+  const len = Math.ceil(SR * burst), buf = ctx.createBuffer(1, len, SR), d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 2;
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  const high = ctx.createBiquadFilter(); high.type = 'highpass'; high.frequency.value = hp;
+  src.connect(high);
+  const click = ctx.createGain(); click.gain.value = 0.35; high.connect(click).connect(out); // the contact itself
+  for (const [f, g, ring] of modes) {
+    const q = Math.PI * f * ring;                       // ring time sets how sharp the resonance is
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q;
+    const amp = ctx.createGain(); amp.gain.value = g * Math.sqrt(q) * body;
+    high.connect(bp).connect(amp).connect(out);
+  }
+  src.start(at);
+}
+
+// Stick-slip friction: an irregular train of tiny clicks through the hinge's resonances
+function creak(ctx, out, at, dur) {
+  const len = Math.ceil(SR * dur), buf = ctx.createBuffer(1, len, SR), d = buf.getChannelData(0);
+  let t = 0;
+  while (t < dur) {
+    const p = t / dur, rate = 35 + 70 * Math.sin(Math.PI * p) + (Math.random() - 0.5) * 25; // pulses per second
+    const i0 = Math.floor(t * SR), amp = Math.sin(Math.PI * p) ** 0.6 * (0.6 + Math.random() * 0.4);
+    for (let k = 0; k < 90 && i0 + k < len; k++) d[i0 + k] += amp * Math.exp(-k / 14) * (Math.random() * 2 - 1);
+    t += 1 / Math.max(12, rate);
+  }
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  const mix = ctx.createGain(); mix.gain.value = 1;
+  for (const [f, q, g] of [[720, 9, 1], [1530, 7, 0.6], [2950, 5, 0.25]]) {
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q;
+    const amp = ctx.createGain(); amp.gain.value = g * 3;
+    src.connect(bp).connect(amp).connect(mix);
+  }
+  mix.connect(out);
+  src.start(at);
+}
+
+// Paper sliding: soft band-limited noise with a rustling flutter
+function rustle(ctx, out, at, dur) {
+  const len = Math.ceil(SR * dur), buf = ctx.createBuffer(1, len, SR), d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) {
+    const p = i / len, flutter = 0.55 + 0.45 * Math.sin(i / SR * 2 * Math.PI * (9 + 6 * Math.sin(p * 7)));
+    d[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * p) * flutter;
+  }
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 3200; bp.Q.value = 0.6;
+  src.connect(bp).connect(out); src.start(at);
+}
+
+const WOOD = s => [[170 * s, 0.9, 0.05], [430 * s, 1, 0.04], [990 * s, 0.55, 0.025], [1750 * s, 0.3, 0.015], [2900 * s, 0.15, 0.008]];
+const RECIPES = {
+  // A wooden button pushed into its hole: first contact, then it bottoms out
+  press: [0.25, (c, o) => { strike(c, o, 0, { modes: WOOD(1.15), hp: 600 }); strike(c, o, 0.045, { modes: WOOD(1.6), hp: 900, body: 0.55 }); }],
+  // A button springing back up
+  pop: [0.2, (c, o) => strike(c, o, 0, { modes: WOOD(1.9), hp: 1000, body: 0.7 })],
+  // The catch inside the box: a small brass latch, then the lid knocks loose
+  latch: [0.45, (c, o) => {
+    strike(c, o, 0, { modes: [[2350, 1, 0.09], [4150, 0.7, 0.07], [6900, 0.45, 0.05], [9100, 0.25, 0.03]], hp: 1800, burst: 0.002 });
+    strike(c, o, 0.07, { modes: WOOD(0.75), hp: 200, body: 0.9 });
+  }],
+  creak: [1.9, (c, o) => creak(c, o, 0, 1.75)],
+  // The open lid coming to rest against its stop
+  thud: [0.5, (c, o) => strike(c, o, 0, { modes: [[95, 1, 0.12], [240, 0.7, 0.08], [610, 0.35, 0.04]], hp: 60, burst: 0.01 })],
+  // Two amber beads knocking together
+  bead: [0.2, (c, o) => {
+    strike(c, o, 0, { modes: [[2900, 1, 0.035], [4800, 0.6, 0.025], [7300, 0.35, 0.015]], hp: 2500, burst: 0.0015 });
+    strike(c, o, 0.018, { modes: [[3300, 1, 0.03], [5600, 0.5, 0.02]], hp: 2500, burst: 0.0015, body: 0.4 });
+  }],
+  paper: [0.5, (c, o) => rustle(c, o, 0, 0.45)],
+};
+const LEVELS = { press: 0.55, pop: 0.32, latch: 0.6, creak: 0.35, thud: 0.6, bead: 0.3, paper: 0.25 };
+const rendered = {};
+async function renderSound(key) {
+  const [dur, build] = RECIPES[key];
+  const ctx = new OfflineAudioContext(1, Math.ceil(SR * dur), SR);
+  build(ctx, ctx.destination);
+  const buf = await ctx.startRendering(), d = buf.getChannelData(0);
+  let peak = 0;
+  for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i]));
+  if (peak > 0) for (let i = 0; i < d.length; i++) d[i] /= peak;
+  rendered[key] = buf;
+}
+// Recordings uploaded in Admin replace the modelled sounds (keys as in CONFIG.sounds)
+const recorded = {};
+async function loadRecording(key) {
+  const name = CONFIG.sounds[key];
+  if (!name) return;
+  const ctx = new OfflineAudioContext(1, SR, SR); // decodes without needing a user gesture
+  for (const url of assetUrls(name)) {
+    try {
+      const res = await fetch(url);
+      if (res.ok) { recorded[key] = await ctx.decodeAudioData(await res.arrayBuffer()); return; }
+    } catch { /* try the next place */ }
+  }
+  console.warn(`Sound "${name}" could not be loaded; the built-in sound is used instead.`);
+}
+function play(key, delay = 0, level = 1) {
+  if (CONFIG.sounds.volume <= 0) return;
+  const buf = recorded[key] ?? rendered[key];
+  if (!buf) return;
+  const a = getAudio();
+  const src = a.createBufferSource(), gain = a.createGain();
+  src.buffer = buf;
+  src.playbackRate.value = recorded[key] ? 1 : 0.95 + Math.random() * 0.1; // natural variation
+  gain.gain.value = CONFIG.sounds.volume * (recorded[key] ? 1 : LEVELS[key]) * level;
+  src.connect(gain).connect(a.destination);
+  src.start(a.currentTime + delay);
+}
+const soundsReady = Promise.all([
+  ...Object.keys(RECIPES).map(renderSound),
+  ...Object.keys(CONFIG.sounds).filter(k => k !== 'volume').map(loadRecording),
+]).catch(err => console.warn('Sounds unavailable:', err));
+
+/* ---------- Procedural textures: no image files ---------- */
+const hash = (x, y, s) => {
+  let h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(s, 1442695041);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
+};
+function noise(x, y, s) {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  const a = hash(xi, yi, s), b = hash(xi + 1, yi, s), c = hash(xi, yi + 1, s), d = hash(xi + 1, yi + 1, s);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
+function fbm(x, y, s) {
+  let t = 0, amp = 0.5, f = 1;
+  for (let i = 0; i < 4; i++) { t += amp * noise(x * f, y * f, s + i); f *= 2.03; amp *= 0.5; }
+  return t;
+}
+const hex = c => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
+
+// Wood: wavy growth rings plus fine fibres running along the board
+function woodTexture(size, light, dark, seed, rings = 9) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const g = c.getContext('2d'), img = g.createImageData(size, size), L = hex(light), D = hex(dark);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const nx = x / size, ny = y / size;
+      const ring = Math.sin((ny * rings + fbm(nx * 1.6, ny * 2.5, seed) * 2.6) * Math.PI * 2) * 0.5 + 0.5;
+      const fibre = noise(nx * 6, ny * 160, seed + 11);
+      const blotch = fbm(nx * 5, ny * 5, seed + 23);
+      const t = Math.min(1, Math.max(0, ring ** 3 * 0.32 + fibre * 0.26 + blotch * 0.42 - 0.08));
+      const i = (y * size + x) * 4;
+      img.data[i] = L[0] + (D[0] - L[0]) * t;
+      img.data[i + 1] = L[1] + (D[1] - L[1]) * t;
+      img.data[i + 2] = L[2] + (D[2] - L[2]) * t;
+      img.data[i + 3] = 255;
+    }
+  }
+  g.putImageData(img, 0, 0);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.MirroredRepeatWrapping; // mirrored tiles hide the seams of the noise
+  tex.anisotropy = 8;
+  return tex;
+}
+
+// Prayer rug: dark wool, woven border bands and a central medallion (original pattern)
+function rugTexture() {
+  const w = 768, h = 1010, c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d');
+  g.fillStyle = '#16121c'; g.fillRect(0, 0, w, h);
+  const gold = 'rgba(176,150,112,', inset = (k, col) => { g.strokeStyle = col; g.lineWidth = 6; g.strokeRect(k, k, w - 2 * k, h - 2 * k); };
+  inset(26, gold + '0.55)'); inset(64, gold + '0.4)'); inset(78, gold + '0.25)');
+  // Border band: little diamonds
+  g.fillStyle = gold + '0.45)';
+  for (let x = 46; x < w - 40; x += 22) for (const y of [45, h - 45]) diamond(x, y, 7);
+  for (let y = 46; y < h - 40; y += 22) for (const x of [45, w - 45]) diamond(x, y, 7);
+  function diamond(x, y, r) { g.beginPath(); g.moveTo(x, y - r); g.lineTo(x + r, y); g.lineTo(x, y + r); g.lineTo(x - r, y); g.closePath(); g.fill(); }
+  // Arch at the top of the field
+  g.strokeStyle = gold + '0.35)'; g.lineWidth = 5;
+  g.beginPath(); g.moveTo(110, 360); g.lineTo(110, 250); g.quadraticCurveTo(w / 2, 90, w - 110, 250); g.lineTo(w - 110, 360); g.stroke();
+  // Medallion: rings of petals
+  g.save(); g.translate(w / 2, h * 0.56);
+  for (const [n, r, len, a] of [[16, 150, 46, 0.32], [12, 96, 40, 0.42], [8, 46, 30, 0.5]]) {
+    g.fillStyle = gold + a + ')';
+    for (let i = 0; i < n; i++) {
+      g.save(); g.rotate((i / n) * Math.PI * 2);
+      g.beginPath(); g.ellipse(0, -r, len * 0.28, len * 0.5, 0, 0, Math.PI * 2); g.fill();
+      g.restore();
+    }
+  }
+  g.restore();
+  // Wool fibres
+  const img = g.getImageData(0, 0, w, h);
+  for (let i = 0; i < img.data.length; i += 4) {
+    const n = (Math.random() - 0.5) * 18;
+    img.data[i] += n; img.data[i + 1] += n; img.data[i + 2] += n;
+  }
+  g.putImageData(img, 0, 0);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+  return tex;
+}
+
+function textTexture(width, height, draw) {
+  const c = document.createElement('canvas'); c.width = width; c.height = height;
+  draw(c.getContext('2d'), width, height);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+  return tex;
+}
+
+function wrapText(g, text, x, y, maxW, lh) {
+  let line = '';
+  for (const word of text.split(' ')) {
+    const test = line ? line + ' ' + word : word;
+    if (g.measureText(test).width > maxW && line) { g.fillText(line, x, y); y += lh; line = word; }
+    else line = test;
+  }
+  if (line) g.fillText(line, x, y);
+  return y;
+}
+
+/* ---------- Renderer, light, room ---------- */
+const canvas = $('gl');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#0e0b09');
+scene.fog = new THREE.Fog('#0e0b09', 3.4, 7.5);
+// Reflections and soft fill light come from a real photographed room (HDRI); a studio stand-in is used until it loads
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+(async () => {
+  for (const url of [...assetUrls('assets/room.hdr'), ...assetUrls('room.hdr')]) {
+    try {
+      const hdr = await new RGBELoader().loadAsync(url);
+      scene.environment = pmrem.fromEquirectangular(hdr).texture;
+      hdr.dispose();
+      return;
+    } catch { /* try the next place */ }
+  }
+})();
+
+const camera = new THREE.PerspectiveCamera(32, 1, 0.05, 30);
+
+scene.add(new THREE.HemisphereLight(0xfff0dc, 0x1a100a, 0.15));
+const lamp = new THREE.DirectionalLight(0xffe1b8, 2.6);
+lamp.position.set(-2.0, 3.6, 2.2);
+lamp.castShadow = true;
+lamp.shadow.mapSize.setScalar(touch ? 1024 : 2048);
+Object.assign(lamp.shadow.camera, { left: -2, right: 2, top: 2, bottom: -2, near: 0.5, far: 9 });
+lamp.shadow.bias = -0.0004; lamp.shadow.normalBias = 0.015; lamp.shadow.radius = 3;
+scene.add(lamp);
+const rim = new THREE.DirectionalLight(0x9db4ff, 0.4);
+rim.position.set(2.5, 1.5, -2.5);
+scene.add(rim);
+
+/* ---------- Materials: photo-scanned wood and carpet (Poly Haven, CC0) from the assets folder ---------- */
+const texLoader = new THREE.TextureLoader();
+async function loadTexture(name, color) {
+  if (!CONFIG.textures) return null;
+  // In the assets folder (zip upload) or loose beside the page (files uploaded one by one)
+  for (const url of [...assetUrls('assets/' + name), ...assetUrls(name)]) {
+    try {
+      const t = await texLoader.loadAsync(url);
+      t.colorSpace = color ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      return t;
+    } catch { /* try the next place */ }
+  }
+  return null;
+}
+async function loadSet(base) {
+  const [map, normalMap, roughnessMap] = await Promise.all([
+    loadTexture(`${base}-color.jpg`, true), loadTexture(`${base}-normal.jpg`), loadTexture(`${base}-rough.jpg`),
+  ]);
+  return map ? { map, normalMap, roughnessMap } : null;
+}
+const [oakSet, rosewoodSet, tableSet, carpetNormal] = await Promise.all([
+  loadSet('oak'), loadSet('rosewood'), loadSet('table'), loadTexture('carpet-normal.jpg'),
+]);
+if (CONFIG.textures && !oakSet) console.warn('Photo textures not found in the assets folder; drawn wood is used instead.');
+
+// Wood material: the photo set when it loaded, drawn grain otherwise. repeat/rotation fit the grain to each part.
+function woodMat(set, drawn, { repeat = [1, 1], rotation = 0, rough = 0.9, normal = 0.7, env = 0.45 } = {}) {
+  const fit = t => {
+    if (!t) return null;
+    t = t.clone(); t.repeat.set(...repeat); t.center.set(0.5, 0.5); t.rotation = rotation; t.needsUpdate = true;
+    return t;
+  };
+  if (set) {
+    return new THREE.MeshStandardMaterial({
+      map: fit(set.map), normalMap: fit(set.normalMap), roughnessMap: fit(set.roughnessMap),
+      roughness: rough, normalScale: new THREE.Vector2(normal, normal), envMapIntensity: env,
+    });
+  }
+  const t = fit(drawn());
+  return new THREE.MeshStandardMaterial({ map: t, bumpMap: t, bumpScale: 0.35, roughness: rough * 0.65, envMapIntensity: env });
+}
+const drawnOak = () => woodTexture(512, '#8f6136', '#5a381c', 3, 6);
+const drawnRosewood = () => woodTexture(256, '#9e5230', '#6a2e14', 5, 3);
+const drawnWalnut = () => woodTexture(512, '#3a261a', '#1d120b', 12, 4);
+
+/* ---------- Table ---------- */
+const table = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), woodMat(tableSet, drawnWalnut, { repeat: [4, 4], rough: 1, env: 0.3 }));
+table.material.color.setHex(0x6a5a4e); // darker, less red: the table should not compete with the box
+table.rotation.x = -Math.PI / 2;
+table.receiveShadow = true;
+scene.add(table);
+
+const content = new THREE.Group(); // everything the camera frames
+scene.add(content);
+
+/* ---------- The box ---------- */
+const BW = 1.0, BD = 1.1, BH = 0.17, BT = 0.085;
+const box = new THREE.Group();
+content.add(box);
+const frameMat = woodMat(oakSet, drawnOak, { repeat: [1, 1], rough: 0.85 });
+const wallMat = woodMat(oakSet, drawnOak, { repeat: [1, 0.25], rough: 0.85 }); // long thin boards: keep the grain from stretching
+const part = (geo, mat, x, y, z) => {
+  const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z);
+  m.castShadow = m.receiveShadow = true; box.add(m); return m;
+};
+part(new RoundedBoxGeometry(BW, 0.035, BD, 3, 0.012), frameMat, 0, 0.0175, 0);              // bottom
+part(new RoundedBoxGeometry(BT, BH, BD, 3, 0.014), wallMat, -(BW - BT) / 2, BH / 2, 0);   // left wall
+part(new RoundedBoxGeometry(BT, BH, BD, 3, 0.014), wallMat, (BW - BT) / 2, BH / 2, 0);    // right wall
+part(new RoundedBoxGeometry(BW, BH, BT, 3, 0.014), wallMat, 0, BH / 2, -(BD - BT) / 2);   // back wall
+part(new RoundedBoxGeometry(BW, BH, BT, 3, 0.014), wallMat, 0, BH / 2, (BD - BT) / 2);    // front wall
+
+// Contact shadow: the soft darkening where a heavy object meets the table
+function contactShadow(w, d, strength) {
+  const tex = textTexture(256, 256, (g, cw, ch) => {
+    const grd = g.createRadialGradient(cw / 2, ch / 2, 0, cw / 2, ch / 2, cw / 2);
+    grd.addColorStop(0, `rgba(0,0,0,${strength})`); grd.addColorStop(0.6, `rgba(0,0,0,${strength * 0.6})`); grd.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = grd; g.fillRect(0, 0, cw, ch);
+  });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
+  m.rotation.x = -Math.PI / 2; m.position.y = 0.0015; m.renderOrder = -1;
+  return m;
+}
+box.add(contactShadow(BW * 1.35, BD * 1.35, 0.75));
+
+// Compartment floor and the note waiting under the lid
+const IW = BW - 2 * BT, ID = BD - 2 * BT;
+part(new THREE.PlaneGeometry(IW, ID), new THREE.MeshStandardMaterial({ color: 0x2c1a0e, roughness: 0.9 }), 0, 0.036, 0)
+  .rotation.x = -Math.PI / 2;
+const noteTexture = textTexture(900, 1100, (g, w, h) => drawNote(g, w, h));
+function drawNote(g, w, h, img) {
+  g.fillStyle = '#efe3c8'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 9000; i++) { g.fillStyle = `rgba(90,60,20,${Math.random() * 0.05})`; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+  g.fillStyle = '#2a1f14'; g.textAlign = 'center'; g.direction = RTL ? 'rtl' : 'ltr';
+  let y = 170;
+  if (img) {
+    const s = Math.min((w - 160) / img.width, 420 / img.height);
+    g.drawImage(img, (w - img.width * s) / 2, 110, img.width * s, img.height * s);
+    y = 110 + img.height * s + 90;
+  }
+  g.font = RTL ? '700 70px "Amiri"' : '62px "Special Elite"';
+  g.fillText(T.reveal.title, w / 2, y);
+  g.font = RTL ? '400 48px "Amiri"' : '40px "Special Elite"';
+  wrapText(g, T.reveal.text, w / 2, y + 100, w - 160, RTL ? 72 : 60);
+}
+const note = part(new THREE.PlaneGeometry(IW * 0.72, IW * 0.72 * 1100 / 900),
+  new THREE.MeshStandardMaterial({ map: noteTexture, roughness: 0.95 }), 0.02, 0.038, 0.02);
+note.rotation.set(-Math.PI / 2, 0, 0.06);
+note.castShadow = false;
+
+// Burnt-in engraving on the front wall
+const engravingTex = textTexture(1600, 170, (g, w, h) => {
+  g.textAlign = 'center'; g.textBaseline = 'middle'; g.direction = RTL ? 'rtl' : 'ltr';
+  g.font = RTL ? '700 104px "Amiri"' : 'italic 600 92px "Cormorant Garamond"';
+  g.fillStyle = 'rgba(255,215,170,0.18)'; g.fillText(T.engraving, w / 2, h / 2 + 3);
+  g.fillStyle = 'rgba(38,16,4,0.85)'; g.fillText(T.engraving, w / 2, h / 2);
+});
+const engraving = part(new THREE.PlaneGeometry(0.9, 0.095),
+  new THREE.MeshStandardMaterial({ map: engravingTex, transparent: true, roughness: 0.8, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }),
+  0, BH / 2, BD / 2 + 0.0006);
+engraving.castShadow = false;
+
+// The button panel is the lid: hinged along the back wall
+const lidY = BH - 0.05;
+const hinge = new THREE.Group();
+hinge.position.set(0, lidY, -ID / 2);
+box.add(hinge);
+const panel = new THREE.Mesh(new RoundedBoxGeometry(IW - 0.008, 0.03, ID - 0.008, 3, 0.008),
+  woodMat(oakSet, drawnOak, { repeat: [0.85, 0.85], rotation: Math.PI / 2, rough: 0.8 }));
+panel.position.set(0, 0, ID / 2);
+panel.castShadow = panel.receiveShadow = true;
+hinge.add(panel);
+
+const PANEL_TOP = 0.015, STEP = 0.19, PEG_UP = 0.032, PEG_DOWN = 0.006;
+const holeMat = new THREE.MeshStandardMaterial({ color: 0x0c0603, roughness: 1 });
+const chamferMat = new THREE.MeshStandardMaterial({ color: 0x4a2a14, roughness: 0.8 });
+// Rounded peg: profile turned on a lathe
+const pegProfile = [[0, 0], [0.05, 0], [0.05, 0.03], [0.048, 0.04], [0.043, 0.046], [0.034, 0.049], [0, 0.05]]
+  .map(([x, y]) => new THREE.Vector2(x, y));
+const pegGeo = new THREE.LatheGeometry(pegProfile, 40);
+const pegs = [];
+for (let n = 1; n <= 16; n++) {
+  const col = (n - 1) % 4, row = Math.floor((n - 1) / 4);
+  const x = (col - 1.5) * STEP, z = ID / 2 + (row - 1.5) * STEP;
+  const hole = new THREE.Mesh(new THREE.CircleGeometry(0.06, 40), holeMat);
+  hole.rotation.x = -Math.PI / 2; hole.position.set(x, PANEL_TOP + 0.0006, z);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.06, 0.068, 40), chamferMat);
+  ring.rotation.x = -Math.PI / 2; ring.position.set(x, PANEL_TOP + 0.0005, z);
+  hinge.add(hole, ring);
+
+  // Each button gets its own material (it glows on hover) cut from a different part of the rosewood
+  const mat = woodMat(rosewoodSet, drawnRosewood, { repeat: [0.3, 0.3], rotation: n * 0.9, rough: 0.75, env: 0.55 });
+  mat.map.offset.set((n * 0.37) % 1, (n * 0.61) % 1);
+  mat.color.setHex(0xc8a090); // aged, less saturated rosewood
+  const peg = new THREE.Mesh(pegGeo, mat);
+  peg.position.set(x, PANEL_TOP - 0.05 + PEG_UP, z);
+  if (CONFIG.showNumbers) {
+    const label = new THREE.Mesh(new THREE.CircleGeometry(0.03, 24), new THREE.MeshBasicMaterial({
+      transparent: true, depthWrite: false,
+      map: textTexture(128, 128, (g, w, h) => {
+        g.fillStyle = 'rgba(30,10,2,0.8)'; g.font = '700 84px "Special Elite"'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText(n, w / 2, h / 2 + 4);
+      }),
+    }));
+    label.rotation.x = -Math.PI / 2; label.position.y = 0.0505;
+    peg.add(label);
+  }
+  peg.castShadow = peg.receiveShadow = true;
+  peg.userData = { n, down: false };
+  hinge.add(peg);
+  pegs.push(peg);
+}
+const pegY = down => PANEL_TOP - 0.05 + (down ? PEG_DOWN : PEG_UP);
+
+/* ---------- The misbaha on its rug ---------- */
+const misbaha = new THREE.Group();
+content.add(misbaha);
+const RUG_W = 0.95, RUG_D = 1.25;
+// Woven pattern drawn in code; the pile and weave come from a scanned carpet's normal map
+const rugNormal = carpetNormal && Object.assign(carpetNormal.clone(), { needsUpdate: true });
+rugNormal?.repeat.set(3, 4);
+const rug = new THREE.Mesh(new THREE.PlaneGeometry(RUG_W, RUG_D), new THREE.MeshStandardMaterial({
+  map: rugTexture(), normalMap: rugNormal ?? null, normalScale: new THREE.Vector2(1.1, 1.1), roughness: 1, envMapIntensity: 0.15,
+}));
+rug.rotation.x = -Math.PI / 2; rug.position.y = 0.003; rug.receiveShadow = true;
+misbaha.add(rug);
+
+const BEAD_R = 0.029, RX = 0.2, RZ = 0.27, GAP = 0.32, BEAD_Y = BEAD_R + 0.004;
+const beadMat = new THREE.MeshPhysicalMaterial({
+  color: 0xb8661e, roughness: 0.12, clearcoat: 0.6, clearcoatRoughness: 0.2,
+  transmission: 0.6, thickness: 0.06, ior: 1.54, attenuationColor: new THREE.Color(0x7a3006), attenuationDistance: 0.045,
+  envMapIntensity: 0.45,
+});
+const silverMat = new THREE.MeshStandardMaterial({ color: 0xc9c5bc, metalness: 1, roughness: 0.35, envMapIntensity: 0.8 });
+const silkMat = new THREE.MeshStandardMaterial({ color: 0x9a9284, roughness: 0.85 });
+const threadMat = new THREE.MeshStandardMaterial({ color: 0x5a4632, roughness: 0.9 });
+
+// Beads go up the left side, over the far end and down the right side.
+// Counting from the left gives the groups in order (3,7,2,8); from the right gives them reversed.
+const items = [];
+CONFIG.misbaha.groups.forEach((count, gi, all) => {
+  for (let i = 0; i < count; i++) items.push('bead');
+  if (gi < all.length - 1) items.push('sep');
+});
+const along = k => {
+  const t = GAP + k * (2 * Math.PI - 2 * GAP) / (items.length - 1);
+  return new THREE.Vector3(-RX * Math.sin(t), BEAD_Y, RZ * Math.cos(t));
+};
+const front = new THREE.Vector3(0, BEAD_Y, RZ + 0.03);
+const beads = [];
+const markRingGeo = new THREE.TorusGeometry(BEAD_R + 0.008, 0.0035, 8, 40);
+const markRingMat = new THREE.MeshStandardMaterial({ color: 0xc9a45c, emissive: 0x6a4a10, metalness: 0.8, roughness: 0.3 });
+items.forEach((kind, k) => {
+  const p = along(k);
+  if (kind === 'sep') {
+    const next = along(k + 1), prev = along(k - 1);
+    const sep = new THREE.Mesh(new THREE.CylinderGeometry(0.027, 0.027, 0.03, 6), silverMat);
+    sep.geometry.rotateX(Math.PI / 2);
+    sep.position.copy(p).setY(0.028);
+    sep.lookAt(next.clone().setY(0.028).add(next.clone().sub(prev)));
+    sep.castShadow = sep.receiveShadow = true;
+    misbaha.add(sep);
+    return;
+  }
+  const bead = new THREE.Mesh(new THREE.SphereGeometry(BEAD_R, 32, 24), beadMat);
+  bead.position.copy(p);
+  bead.castShadow = true;
+  const ring = new THREE.Mesh(markRingGeo, markRingMat);
+  ring.rotation.x = Math.PI / 2; ring.position.copy(p).setY(0.006); ring.visible = false;
+  bead.userData = { index: beads.length, ring };
+  misbaha.add(bead, ring);
+  beads.push(bead);
+});
+// Thread through every bead and the head bead
+const threadPts = [front, ...items.map((_, k) => along(k).setY(0.026))];
+const thread = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(threadPts, true), 200, 0.0028, 6, true), threadMat);
+misbaha.add(thread);
+// Head bead (imam), its silver cap and the tassel
+const imam = new THREE.Mesh(new THREE.CapsuleGeometry(0.03, 0.07, 8, 24), beadMat);
+imam.rotation.x = Math.PI / 2; imam.position.set(0, 0.032, RZ + 0.1); imam.castShadow = true;
+const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.026, 0.026, 24), silverMat);
+cap.rotation.x = Math.PI / 2; cap.position.set(0, 0.03, RZ + 0.045); cap.castShadow = true;
+const knot = new THREE.Mesh(new THREE.SphereGeometry(0.016, 16, 12), silverMat);
+knot.position.set(0, 0.018, RZ + 0.16); knot.castShadow = true;
+misbaha.add(imam, cap, knot);
+for (let i = 0; i < 22; i++) {
+  const spread = (i / 21 - 0.5) * 0.17, len = 0.17 + ((i * 37) % 7) * 0.008;
+  const curve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, 0.016, RZ + 0.165),
+    new THREE.Vector3(spread * 0.4, 0.008, RZ + 0.165 + len * 0.45),
+    new THREE.Vector3(spread, 0.005, RZ + 0.165 + len),
+  ]);
+  const strand = new THREE.Mesh(new THREE.TubeGeometry(curve, 16, 0.0018, 4, false), silkMat);
+  strand.castShadow = true;
+  misbaha.add(strand);
+}
+
+/* ---------- Layout: side by side on wide screens, stacked on tall ones ---------- */
+const VIEW = new THREE.Vector3(0, 1.32, 1).normalize();
+const view = { center: new THREE.Vector3(0, 0.08, 0), radius: 4.5, focus: 0 }; // focus 0 = whole table, 1 = inside the box
+function layout() {
+  const w = innerWidth, h = innerHeight;
+  if (!w || !h) return; // not visible yet: keep the last good framing instead of dividing by zero
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  if (camera.aspect >= 1) {
+    box.position.set(-0.62, 0, 0); box.rotation.y = 0.04;
+    misbaha.position.set(0.72, 0, 0.02); misbaha.rotation.y = -0.06;
+  } else {
+    // Never turn the misbaha: "counting from the left" must stay the same side
+    box.position.set(0, 0, -0.74); box.rotation.y = 0.02;
+    misbaha.position.set(0, 0, 0.62); misbaha.rotation.y = 0;
+  }
+  const bounds = new THREE.Box3().setFromObject(content);
+  bounds.getCenter(view.center);
+  const sizeV = bounds.getSize(new THREE.Vector3());
+  const vfov = THREE.MathUtils.degToRad(camera.fov);
+  const hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
+  // Distance so the table's width and its depth (seen at an angle) both fit, plus room for the label and status line
+  const distW = (sizeV.x / 2) / Math.tan(hfov / 2) * 1.3;
+  const distD = (sizeV.z * 0.62 + sizeV.y) / 2 / Math.tan(vfov / 2) * 1.3;
+  view.radius = Math.max(distW, distD);
+}
+addEventListener('resize', layout);
+// A page loaded in a hidden tab or frame (e.g. the Admin preview) starts at 0×0; lay out again once it gets a real size
+new ResizeObserver(layout).observe(canvas);
+
+/* ---------- Pointer: tap buttons and beads, gentle camera drift ---------- */
+const raycaster = new THREE.Raycaster(), ndc = new THREE.Vector2();
+const mouse = { x: 0, y: 0 };
+let hovered = null; // the button or bead under the mouse
+function hit(e) {
+  ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  raycaster.setFromCamera(ndc, camera);
+  return raycaster.intersectObjects([...pegs, ...beads], false)[0]?.object;
+}
+canvas.addEventListener('pointermove', e => {
+  if (e.pointerType === 'mouse') {
+    mouse.x = e.clientX / innerWidth - 0.5; mouse.y = e.clientY / innerHeight - 0.5;
+    const o = hit(e);
+    hovered = o && !(o.userData.n && (o.userData.down || locked || opened)) ? o : null;
+    canvas.classList.toggle('hot', !!hovered);
+  }
+});
+canvas.addEventListener('pointerleave', () => { hovered = null; mouse.x = mouse.y = 0; });
+
+// Status line: old words fade up and out, new words fade up in
+function say(text) {
+  gsap.timeline()
+    .to(status, { autoAlpha: 0, y: -4, duration: 0.15, ease: 'power1.out', overwrite: true })
+    .add(() => { status.textContent = text; })
+    .fromTo(status, { y: 6 }, { autoAlpha: text ? 1 : 0, y: 0, duration: 0.35, ease: 'power2.out' });
+}
+let downAt = null;
+canvas.addEventListener('pointerdown', e => { downAt = { x: e.clientX, y: e.clientY }; });
+canvas.addEventListener('pointerup', e => {
+  if (!downAt || Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 10) return;
+  downAt = null;
+  const o = hit(e);
+  if (!o) return;
+  if (o.userData.n) pressPeg(o);
+  else toggleBead(o);
+});
+
+/* ---------- Box logic: like the real one, nothing is judged until enough buttons are down ---------- */
+const seq = CONFIG.sequence, status = $('status');
+let pressed = [], locked = false, opened = false;
+
+const pegButtons = $('pegButtons');
+pegButtons.setAttribute('aria-label', T.buttons);
+pegs.forEach(peg => {
+  const b = document.createElement('button');
+  b.type = 'button'; b.textContent = fill(T.button, { n: peg.userData.n });
+  b.setAttribute('aria-pressed', 'false');
+  b.addEventListener('click', () => pressPeg(peg));
+  b.addEventListener('focus', () => peg.material.emissive.setHex(0x3a2408));
+  b.addEventListener('blur', () => peg.material.emissive.setHex(0x000000));
+  peg.userData.button = b;
+  pegButtons.append(b);
+});
+
+function pressPeg(peg) {
+  if (locked || peg.userData.down) return;
+  peg.userData.down = true;
+  peg.userData.button.setAttribute('aria-pressed', 'true');
+  gsap.timeline()
+    .to(peg.position, { y: pegY(true) - 0.004, duration: 0.09, ease: 'power2.in' })
+    .to(peg.position, { y: pegY(true), duration: 0.18, ease: 'back.out(3)' });
+  play('press');
+  if (status.textContent) say('');
+  pressed.push(peg.userData.n);
+  if (pressed.length < seq.length) return;
+  locked = true;
+  if (pressed.every((n, i) => n === seq[i])) setTimeout(openBox, 500);
+  else setTimeout(resetBox, 550);
+}
+
+function resetBox() {
+  pegs.forEach((peg, i) => {
+    if (peg.userData.down) play('pop', (i % 4) * 0.015 + Math.random() * 0.03, 0.8 + Math.random() * 0.3); // each spring-loaded button clacks back
+    peg.userData.down = false;
+    peg.userData.button.setAttribute('aria-pressed', 'false');
+    gsap.to(peg.position, { y: pegY(false), duration: 0.22, ease: 'back.out(3)', delay: (i % 4) * 0.015 });
+  });
+  gsap.to(box.rotation, { keyframes: { z: [0, 0.012, -0.01, 0.006, 0] }, duration: 0.4, ease: 'none' });
+  gsap.to(box.position, { keyframes: { y: [0, 0.012, 0] }, duration: 0.3, ease: 'power2.out' });
+  say(T.wrong);
+  pressed = [];
+  locked = false;
+}
+
+function openBox() {
+  opened = true;
+  hovered = null; canvas.classList.remove('hot');
+  say(T.solved);
+  // In step with the motion below: the catch releases, the hinge creaks while the lid swings, the lid comes to rest
+  play('latch');
+  play('creak', 0.45);
+  play('thud', 2.3);
+  pegButtons.querySelectorAll('button').forEach(b => { b.disabled = true; });
+  // The catch releases with a small jolt, then the lid swings up slowly and the camera leans in
+  gsap.timeline()
+    .to(hinge.rotation, { x: -0.06, duration: 0.25, ease: 'power2.out' })
+    .to(hinge.rotation, { x: -0.03, duration: 0.2, ease: 'power2.inOut' })
+    .to(hinge.rotation, { x: -1.72, duration: 1.9, ease: 'power3.inOut' })
+    .to(view, { focus: 1, duration: 2.2, ease: 'power2.inOut' }, 0.6)
+    .from(note.rotation, { z: -0.25, duration: 1.6, ease: 'power3.out' }, 1.0); // the note shifts as the lid lets go
+  const reveal = document.createElement('div');
+  reveal.className = 'sr';
+  reveal.textContent = `${T.reveal.title}. ${T.reveal.text}`;
+  document.body.append(reveal);
+}
+
+/* ---------- Beads: tap to mark while counting ---------- */
+const beadButtons = $('beadButtons');
+beadButtons.setAttribute('aria-label', T.beads);
+beads.forEach((bead, i) => {
+  const b = document.createElement('button');
+  b.type = 'button'; b.textContent = fill(T.bead, { n: i + 1 });
+  b.setAttribute('aria-pressed', 'false');
+  b.addEventListener('click', () => toggleBead(bead));
+  bead.userData.button = b;
+  beadButtons.append(b);
+});
+function toggleBead(bead) {
+  const ring = bead.userData.ring, on = !bead.userData.marked;
+  bead.userData.marked = on;
+  bead.userData.button.setAttribute('aria-pressed', String(on));
+  play('bead');
+  // A little hop for the bead, and the brass ring grows in or shrinks away
+  gsap.timeline()
+    .to(bead.position, { y: BEAD_Y + 0.018, duration: 0.12, ease: 'power2.out' })
+    .to(bead.position, { y: BEAD_Y, duration: 0.35, ease: 'bounce.out' });
+  if (on) {
+    ring.visible = true;
+    gsap.fromTo(ring.scale, { x: 0.4, y: 0.4, z: 0.4 }, { x: 1, y: 1, z: 1, duration: 0.4, ease: 'back.out(2.5)', overwrite: true });
+  } else {
+    gsap.to(ring.scale, { x: 0.4, y: 0.4, z: 0.4, duration: 0.15, ease: 'power1.in', overwrite: true, onComplete: () => { ring.visible = false; } });
+  }
+}
+
+/* ---------- Hints: one at a time, then the answer ----------
+   Progress is remembered on this device, so a reload does not hand out the hints again. */
+const HINTS = T.hints, HU = T.ui;
+const hintList = $('hintList'), hintBtn = $('hintBtn'), answerBtn = $('answerBtn'), hintToggle = $('hintToggle');
+const hintKey = 'pda-hints:' + location.pathname.replace(/^\/ar(?=\/)/, '');
+let hintsUsed = 0, answerShown = false;
+try {
+  const saved = JSON.parse(localStorage.getItem(hintKey) || '{}');
+  hintsUsed = Math.min(saved.used ?? 0, HINTS.length);
+  answerShown = !!saved.answer;
+} catch { /* storage unavailable: start fresh */ }
+const saveHints = () => { try { localStorage.setItem(hintKey, JSON.stringify({ used: hintsUsed, answer: answerShown })); } catch { /* ignore */ } };
+$('hints').setAttribute('aria-label', HU.show);
+answerBtn.textContent = HU.showAnswer;
+
+function cardIn(card) {
+  hintList.hidden = false;
+  gsap.from(card, { y: 14, autoAlpha: 0, duration: 0.5, ease: 'power3.out' });
+  card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  play('paper');
+}
+function addHint(i, animate) {
+  const li = document.createElement('li');
+  li.className = 'card';
+  li.append(
+    Object.assign(document.createElement('span'), { className: 'tag', textContent: fill(HU.hintTitle, { n: i + 1, total: HINTS.length }) }),
+    document.createTextNode(HINTS[i]),
+  );
+  hintList.append(li);
+  if (animate) cardIn(li);
+}
+function addAnswer(animate) {
+  const li = document.createElement('li');
+  li.className = 'card answer';
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  grid.setAttribute('aria-hidden', 'true');
+  for (let n = 1; n <= 16; n++) {
+    const step = CONFIG.sequence.indexOf(n);
+    grid.append(Object.assign(document.createElement('span'), { className: step >= 0 ? 'on' : '', textContent: step >= 0 ? step + 1 : '' }));
+  }
+  li.append(
+    Object.assign(document.createElement('span'), { className: 'tag', textContent: HU.answerTitle }),
+    document.createTextNode(`${fill(T.answer, { ids: CONFIG.starIds.join(' / ') })} ${CONFIG.sequence.map(n => fill(T.button, { n })).join(RTL ? '، ' : ', ')}`),
+    grid,
+  );
+  hintList.append(li);
+  if (animate) cardIn(li);
+}
+// Fade a button out quickly, then (optionally) pop another one in
+function swapButton(out, inn, animate) {
+  if (!animate) { out.hidden = true; if (inn) inn.hidden = false; return; }
+  gsap.to(out, { autoAlpha: 0, scale: 0.96, duration: 0.15, ease: 'power1.out', onComplete: () => {
+    out.hidden = true; gsap.set(out, { clearProps: 'opacity,visibility,scale' });
+    if (!inn) return;
+    inn.hidden = false;
+    gsap.from(inn, { autoAlpha: 0, scale: 0.96, duration: 0.3, ease: 'back.out(1.6)' });
+  } });
+}
+function updateHintButtons(animate) {
+  hintBtn.replaceChildren(HU.hint, Object.assign(document.createElement('span'), { className: 'count', textContent: `${hintsUsed}/${HINTS.length}` }));
+  if (hintsUsed >= HINTS.length && !hintBtn.hidden) swapButton(hintBtn, answerShown ? null : answerBtn, animate); // all hints used
+  if (answerShown && !answerBtn.hidden) swapButton(answerBtn, null, animate);                                     // answer revealed
+  hintToggle.hidden = hintsUsed === 0;
+  hintToggle.textContent = hintList.hidden ? HU.show : HU.hide;
+}
+hintBtn.addEventListener('click', () => {
+  if (hintsUsed >= HINTS.length) return;
+  addHint(hintsUsed, true);
+  hintsUsed++;
+  saveHints();
+  updateHintButtons(true);
+});
+answerBtn.addEventListener('click', () => {
+  answerShown = true;
+  saveHints();
+  addAnswer(true);
+  updateHintButtons(true);
+});
+hintToggle.addEventListener('click', () => {
+  hintList.hidden = !hintList.hidden;
+  if (!hintList.hidden) gsap.from(hintList.children, { y: 10, autoAlpha: 0, duration: 0.35, ease: 'power2.out', stagger: 0.04 });
+  hintToggle.textContent = hintList.hidden ? HU.show : HU.hide;
+});
+for (let i = 0; i < hintsUsed; i++) addHint(i, false);
+if (answerShown) addAnswer(false);
+hintList.hidden = hintsUsed === 0;
+hintBtn.hidden = hintsUsed >= HINTS.length;
+answerBtn.hidden = hintsUsed < HINTS.length || answerShown;
+updateHintButtons(false);
+
+/* ---------- Loop ---------- */
+const damp = (a, b, k, dt) => a + (b - a) * (1 - Math.exp(-k * dt));
+const cam = { x: 0, y: 0 };
+const look = new THREE.Vector3(), boxWorld = new THREE.Vector3();
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.05); last = now;
+  cam.x = damp(cam.x, calm ? 0 : mouse.x * 0.18, 2.5, dt);
+  cam.y = damp(cam.y, calm ? 0 : -mouse.y * 0.1, 2.5, dt);
+  // Hover: buttons glow warm and swell a touch, beads swell; both ease back when the mouse leaves
+  for (const peg of pegs) {
+    const on = peg === hovered ? 1 : 0;
+    peg.userData.glow = damp(peg.userData.glow ?? 0, on, on ? 14 : 6, dt);
+    const s = 1 + peg.userData.glow * 0.05;
+    peg.scale.set(s, 1, s);
+    if (document.activeElement !== peg.userData.button) peg.material.emissive.setRGB(0.12 * peg.userData.glow, 0.06 * peg.userData.glow, 0.01 * peg.userData.glow);
+  }
+  for (const bead of beads) {
+    const target = bead === hovered ? 1.14 : 1;
+    const s = damp(bead.scale.x, target, bead === hovered ? 14 : 6, dt);
+    bead.scale.setScalar(s);
+  }
+  box.getWorldPosition(boxWorld);
+  look.copy(view.center).lerp(boxWorld, view.focus);
+  const dist = THREE.MathUtils.lerp(view.radius, 1.55, view.focus);
+  camera.position.copy(look).addScaledVector(VIEW, dist);
+  // Fog only darkens the far edges of the table. It follows the camera, because on a tall phone screen
+  // the camera sits further back and fixed fog would grey out the box and the misbaha.
+  scene.fog.near = dist + 0.9;
+  scene.fog.far = dist + 4.5;
+  camera.position.x += cam.x; camera.position.y += cam.y;
+  camera.lookAt(look);
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+
+/* ---------- Boot ---------- */
+await Promise.all([
+  RTL ? document.fonts.load('700 104px "Amiri"') : document.fonts.load('italic 600 92px "Cormorant Garamond"'),
+  document.fonts.load('40px "Special Elite"'),
+  RTL ? document.fonts.load('400 48px "Amiri"') : null,
+].map(p => p?.catch(() => {})));
+// Redraw the text textures now that the fonts are in
+engravingTex.image.getContext('2d').clearRect(0, 0, 1600, 170);
+{
+  const g = engravingTex.image.getContext('2d');
+  g.textAlign = 'center'; g.textBaseline = 'middle'; g.direction = RTL ? 'rtl' : 'ltr';
+  g.font = RTL ? '700 104px "Amiri"' : 'italic 600 92px "Cormorant Garamond"';
+  g.fillStyle = 'rgba(255,215,170,0.16)'; g.fillText(T.engraving, 800, 88);
+  g.fillStyle = 'rgba(24,9,2,0.92)'; g.fillText(T.engraving, 800, 85);
+  engravingTex.needsUpdate = true;
+}
+drawNote(noteTexture.image.getContext('2d'), 900, 1100);
+noteTexture.needsUpdate = true;
+if (T.reveal.image) {
+  const urls = assetUrls(T.reveal.image), img = new Image();
+  img.onload = () => { drawNote(noteTexture.image.getContext('2d'), 900, 1100, img); noteTexture.needsUpdate = true; };
+  img.onerror = () => { urls.shift(); if (urls.length) img.src = urls[0]; };
+  img.src = urls[0];
+}
+
+layout();requestAnimationFrame(frame);
+$('loader').classList.add('done');
+// Entrance: the lamp warms up while the camera glides down to the table, then the label fades in
+gsap.timeline({ delay: 0.1 })
+  .from(view, { radius: view.radius * 1.4, duration: 2.4, ease: 'expo.out' })
+  .from(lamp, { intensity: 0, duration: 1.6, ease: 'power2.out' }, 0)
+  .from(misbaha.position, { y: 0.06, duration: 1.6, ease: 'power3.out' }, 0.2)
+  .from('#label', { autoAlpha: 0, y: -6, duration: 0.6, ease: 'power2.out' }, 0.9)
+  .from('#hints', { autoAlpha: 0, y: 8, duration: 0.6, ease: 'power2.out' }, 1.1);
+</script>
+</body>
+</html>

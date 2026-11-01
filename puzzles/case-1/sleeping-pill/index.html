@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مهمة المخدر</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body { width: 100%; }
+
+    body {
+        min-height: 100vh;
+        display: flex;
+        padding: 20px;
+        font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+        background: #0b121a;
+    }
+
+    .container {
+        position: relative;
+        width: 100%;
+        max-width: 650px;
+        margin: auto;                 /* centers both ways, and never clips when content is tall */
+        background: linear-gradient(145deg, #14202C 0%, #0F1924 100%);
+        border-radius: 12px;
+        overflow: hidden;
+        border: 2px solid #192533;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+        animation: fadeIn 0.8s ease-out;
+    }
+
+    .content { padding: 35px; }
+    .content.hidden { display: none; }
+
+    /* ---------- Question / input ---------- */
+    .question {
+        font-size: 24px;
+        margin-bottom: 30px;
+        text-align: center;
+        line-height: 1.6;
+        color: #EDE6D6;
+        padding: 20px;
+        background: rgba(26, 39, 53, 0.5);
+        border-radius: 8px;
+        border-inline-start: 4px solid #AA814B;
+        animation: fadeIn 1.2s ease-out;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .input-container { position: relative; margin-bottom: 25px; animation: slideUp 1s ease-out; }
+
+    .input-field {
+        width: 100%;
+        padding: 18px 22px;
+        background: rgba(15, 25, 36, 0.7);
+        border: 2px solid #192533;
+        border-radius: 8px;
+        color: #EDE6D6;
+        font-size: 18px;
+        font-family: inherit;
+        transition: all 0.3s;
+    }
+    .input-field:focus {
+        outline: none;
+        border-color: #AA814B;
+        box-shadow: 0 0 0 3px rgba(196, 163, 90, 0.3);
+        transform: scale(1.02);
+    }
+    .input-field::placeholder { color: #8C6B3B; }
+
+    .submit-btn {
+        width: 100%;
+        padding: 18px;
+        background: linear-gradient(90deg, #AA814B 0%, #8C6B3B 100%);
+        border: none;
+        border-radius: 8px;
+        color: #14202C;
+        font-size: 20px;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 5px 15px rgba(196, 163, 90, 0.3);
+        letter-spacing: 1px;
+        animation: pulse 2s infinite;
+    }
+    .submit-btn:hover {
+        background: linear-gradient(90deg, #8C6B3B 0%, #AA814B 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(196, 163, 90, 0.4);
+        animation: none;
+    }
+    .submit-btn:active { transform: translateY(1px); }
+
+    .feedback {
+        text-align: center;
+        margin-top: 25px;
+        min-height: 28px;
+        font-weight: 500;
+        padding: 15px;
+        border-radius: 8px;
+        font-size: 18px;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all 0.5s ease;
+    }
+    .feedback.show { opacity: 1; transform: translateY(0); }
+    .correct   { color: #AA814B; background: rgba(196, 163, 90, 0.1);  border: 1px solid #8C6B3B; }
+    .incorrect { color: #AA814B; background: rgba(140, 107, 59, 0.15); border: 1px solid #8C6B3B; }
+
+    /* ---------- Hints ---------- */
+    .hint-section {
+        display: none;
+        margin-top: 25px;
+        text-align: center;
+        padding: 20px;
+        background: rgba(26, 39, 53, 0.5);
+        border-radius: 8px;
+        border: 1px solid #192533;
+        animation: fadeIn 0.5s ease;
+    }
+    .hint-section.show { display: block; }
+
+    .hint-btn {
+        background: transparent;
+        border: 2px solid #AA814B;
+        color: #AA814B;
+        padding: 12px 28px;
+        border-radius: 30px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 16px;
+        font-family: inherit;
+        animation: pulse 3s infinite;
+    }
+    .hint-btn:hover { background: rgba(196, 163, 90, 0.15); animation: none; }
+
+    .hint-text {
+        background: rgba(15, 25, 36, 0.7);
+        padding: 0 20px;
+        border-radius: 8px;
+        margin-top: 20px;
+        border-inline-start: 3px solid #AA814B;
+        text-align: start;
+        color: #EDE6D6;
+        font-size: 17px;
+        line-height: 1.6;
+        opacity: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: all 0.5s ease;
+    }
+    .hint-text.show { opacity: 1; max-height: 200px; padding: 20px; }
+
+    .reveal-btn {
+        background: #AA814B;
+        border: 2px solid #AA814B;
+        color: #14202C;
+        font-weight: bold;
+        font-family: inherit;
+        padding: 12px 28px;
+        border-radius: 30px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 16px;
+        margin-top: 20px;
+        display: none;
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    .reveal-btn.visible { opacity: 1; transform: translateY(0); }
+    .reveal-btn:hover { background: #8C6B3B; border-color: #8C6B3B; color: #fff; }
+
+    .answer-display {
+        display: none;
+        margin-top: 20px;
+        padding: 20px;
+        width: 100%;
+        background: linear-gradient(145deg, #2a1f10 0%, #1f1408 100%);
+        border: 2px solid #AA814B;
+        border-radius: 8px;
+        color: #EDE6D6;
+        font-size: 20px;
+        font-weight: bold;
+        text-align: center;
+        line-height: 1.75;
+        box-shadow: 0 0 15px rgba(170, 129, 75, 0.3);
+        animation: fadeIn 0.5s ease;
+    }
+
+    .attempts {
+        text-align: center;
+        margin-top: 25px;
+        color: #8C6B3B;
+        font-size: 16px;
+        background: rgba(26, 39, 53, 0.5);
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px dashed #192533;
+        animation: fadeIn 1.5s ease-out;
+    }
+
+    .gold-divider { text-align: center; margin: 0 0 30px; color: #AA814B; }
+
+    .magnifying-glass-icon {
+        width: 40px;
+        height: auto;
+        display: inline-block;
+        transform-origin: center center;
+        animation: magnifyJiggle 8s ease-in-out infinite alternate;
+    }
+
+    /* ---------- Success card (now in normal flow, so the documents never get cut off) ---------- */
+    .success-card {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 35px;
+        background: linear-gradient(145deg, #1a2939 0%, #14202C 100%);
+    }
+    .success-card.show { display: flex; animation: fadeIn 0.6s ease; }
+
+    .success-icon {
+        font-size: 60px;
+        color: #AA814B;
+        margin-bottom: 20px;
+        animation: bounce 1s infinite alternate;
+    }
+    .success-title {
+        font-size: 28px;
+        color: #AA814B;
+        margin-bottom: 15px;
+        text-shadow: 0 2px 10px rgba(196, 163, 90, 0.4);
+    }
+    .success-text {
+        color: #EDE6D6;
+        margin-bottom: 20px;
+        line-height: 1.6;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    .success-btn {
+        background: linear-gradient(90deg, #AA814B 0%, #8C6B3B 100%);
+        border: none;
+        padding: 15px 30px;
+        border-radius: 30px;
+        color: #14202C;
+        font-size: 18px;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+        margin-top: 25px;
+        box-shadow: 0 5px 15px rgba(196, 163, 90, 0.3);
+        transition: all 0.3s;
+    }
+    .success-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(196, 163, 90, 0.5); }
+
+    /* ---------- Documents ---------- */
+    .pdf-section {
+        width: 100%;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.8s ease;
+        margin-top: 10px;
+    }
+    .pdf-section.show { opacity: 1; transform: translateY(0); }
+
+    .pdf-container {
+        background: linear-gradient(145deg, #14202C 0%, #0F1924 100%);
+        border-radius: 8px;
+        overflow: hidden;
+        border: 2px solid #192533;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        margin-bottom: 15px;
+    }
+
+    .pdf-header {
+        padding: 15px 20px;
+        background: rgba(26, 39, 53, 0.7);
+        border-bottom: 1px solid #192533;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        user-select: none;
+    }
+    .pdf-header:hover { background: rgba(196, 163, 90, 0.1); }
+
+    .pdf-title {
+        font-size: 18px;
+        color: #EDE6D6;
+        font-weight: 600;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    .pdf-toggle { color: #AA814B; font-size: 20px; transition: transform 0.3s; }
+    .pdf-header.open .pdf-toggle { transform: rotate(180deg); }
+
+    .pdf-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.5s ease;
+    }
+    .pdf-content.show {
+        max-height: 500px;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .pdf-content::-webkit-scrollbar { width: 6px; }
+    .pdf-content::-webkit-scrollbar-track { background: #192533; border-radius: 3px; }
+    .pdf-content::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #AA814B, #8C6B3B);
+        border-radius: 3px;
+    }
+
+    .pdf-image {
+        display: block;
+        width: 100%;
+        height: auto;
+        background: rgba(15, 25, 36, 0.3);
+    }
+
+    .image-gallery {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        padding: 20px;
+        width: 100%;
+    }
+    .gallery-image {
+        display: block;
+        width: 100%;
+        height: auto;
+        background: rgba(15, 25, 36, 0.4);
+        border: 2px solid #192533;
+        border-radius: 8px;
+        transition: border-color 0.3s, box-shadow 0.3s;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    .gallery-image:hover {
+        border-color: #AA814B;
+        box-shadow: 0 8px 25px rgba(170, 129, 75, 0.3);
+    }
+
+    /* ---------- Animations ---------- */
+    @keyframes magnifyJiggle {
+        0%   { transform: translate(0, 0) rotate(0deg); }
+        20%  { transform: translate(8px, -6px) rotate(3deg); }
+        40%  { transform: translate(-5px, 9px) rotate(-4deg); }
+        60%  { transform: translate(-7px, -4px) rotate(-2deg); }
+        80%  { transform: translate(4px, 8px) rotate(4deg); }
+        100% { transform: translate(0, 0) rotate(0deg); }
+    }
+    @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse   { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+    @keyframes bounce  { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+        20%, 40%, 60%, 80% { transform: translateX(10px); }
+    }
+
+    @media (max-width: 600px) {
+        body { padding: 12px; }
+        .question { font-size: 20px; }
+        .content, .success-card { padding: 25px; }
+        .pdf-title { font-size: 16px; }
+        .pdf-content.show { max-height: 380px; }
+        .image-gallery { padding: 12px; }
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- Success card -->
+    <div class="success-card" id="success-card">
+        <div class="success-icon">✓</div>
+        <h2 class="success-title" id="success-title"></h2>
+        <p class="success-text" id="success-text"></p>
+
+        <div class="pdf-section" id="pdf-section">
+            <div class="pdf-container">
+                <div class="pdf-header" id="pdf-header-1">
+                    <div class="pdf-title" id="pdf-title-1"></div>
+                    <div class="pdf-toggle">▼</div>
+                </div>
+                <div class="pdf-content" id="pdf-content-1">
+                    <img class="pdf-image" id="pdf-image-1" alt="">
+                </div>
+            </div>
+
+            <div class="pdf-container">
+                <div class="pdf-header" id="pdf-header-2">
+                    <div class="pdf-title" id="pdf-title-2"></div>
+                    <div class="pdf-toggle">▼</div>
+                </div>
+                <div class="pdf-content" id="pdf-content-2">
+                    <div class="image-gallery" id="gallery-2"></div>
+                </div>
+            </div>
+        </div>
+
+        <button class="success-btn" id="success-card-btn"></button>
+    </div>
+
+    <!-- Quiz -->
+    <div class="content" id="quiz-content">
+        <div class="gold-divider">
+            <img src="https://pdacases.com/wp-content/uploads/2025/11/64d5cc18c0370268169d0bee4e347fa3-removebg-preview.png"
+                 class="magnifying-glass-icon" alt="">
+        </div>
+
+        <p class="question" id="question"></p>
+
+        <div class="input-container">
+            <input type="text" class="input-field" id="answer-input" autocomplete="off">
+        </div>
+
+        <button class="submit-btn" id="submit-btn"></button>
+
+        <p class="feedback" id="feedback"></p>
+
+        <div class="hint-section" id="hint-section">
+            <button class="hint-btn" id="hint-btn"></button>
+            <p class="hint-text" id="hint-text"></p>
+            <button class="reveal-btn" id="show-answer-btn"></button>
+            <div class="answer-display" id="answer-display"></div>
+        </div>
+
+        <p class="attempts" id="attempts"></p>
+    </div>
+</div>
+
+<script>
+    /* ---------- Language detection ----------
+       Arabic  -> URL path contains /ar  or ?lang=ar
+       English -> anything else (works inside an iframe too) */
+    function detectLang() {
+        const urls = [window.location.href];
+        try { urls.push(window.top.location.href); } catch (e) {}
+        if (document.referrer) urls.push(document.referrer);
+
+        for (const u of urls) {
+            try {
+                const url = new URL(u);
+                const q = (url.searchParams.get('lang') || '').toLowerCase();
+                if (q === 'ar') return 'ar';
+                if (q === 'en') return 'en';
+                if (/(^|\/)ar(\/|$)/i.test(url.pathname)) return 'ar';
+            } catch (e) {}
+        }
+        return 'en';
+    }
+
+    const LANG = detectLang();
+
+    /* ---------- Documents ----------
+       Replace the English image links below when you have English versions of the documents.
+       Until then, English visitors see the Arabic images. */
+    const DOCS = {
+        ar: {
+            letter: "https://pdacases.com/wp-content/uploads/2026/01/إع44تذار-نادر-بلغة-القمر_page-0001.jpg",
+            confession: [
+                "https://pdacases.com/wp-content/uploads/2026/04/فاتح-صدقي-اعتراف_pages-to-jpg-0001-scaled.jpg",
+                "https://pdacases.com/wp-content/uploads/2026/04/فاتح-صدقي-اعتراف_pages-to-jpg-0002-scaled.jpg",
+                "https://pdacases.com/wp-content/uploads/2026/04/فاتح-صدقي-اعتراف_pages-to-jpg-0003-scaled.jpg"
+            ]
+        },
+        en: {
+            letter: "https://pdacases.com/wp-content/uploads/2026/01/إع44تذار-نادر-بلغة-القمر_page-0001.jpg",
+            confession: [
+                "اعتراف فاتح صدقي Ready Template-EN-1.png",
+                "اعتراف فاتح صدقي Ready Template-EN-2.png",
+                "اعتراف فاتح صدقي Ready Template-EN-3.png"
+            ]
+        }
+    };
+
+    const TEXT = {
+        ar: {
+            title: "مهمة المخدر",
+            question: "يوجد دليل مخفي بين ملفات القضية يشير إلى قيام فاتح بإعطاء زوجته المنوم ليلة الحادثة، ابحث عنه",
+            placeholder: "أدخل إجابتك هنا...",
+            submit: "إرسال الإجابة",
+            correct: "صحيح! أحسنت! يتم فتح المستندات...",
+            incorrect: "غير صحيح، يرجى المحاولة مرة أخرى.",
+            hintBtn: "اطلب تلميحًا",
+            revealBtn: "أظهر الإجابة",
+            answerLabel: "الإجابة الصحيحة هي:",
+            answer: "صوت إطلاق النار",
+            attempts: "المحاولات غير الصحيحة: ",
+            successTitle: "إجابة صحيحة! أحسنت!",
+            successText: "لقد وجدت الدليل المخفي بنجاح. يمكنك الآن الاطلاع على المستندات أدناه",
+            successBtn: "متابعة",
+            doc1: "رسالة نادر",
+            doc2: "اعتراف فاتح صدقي",
+            page: "الصفحة",
+            hints: [
+                "تأكد من صياغة الجواب",
+                "عد إلى ملفات الإستجواب",
+                "تحقق من ملف أصالة الجوهري",
+                "الأمر متعلق بإصابة أصالة بالأرق"
+            ]
+        },
+        en: {
+            title: "The Sedative Task",
+            question: "There is a hidden clue among the case files indicating that Fatih gave his wife sleeping pills on the night of the incident. Find it.",
+            placeholder: "Enter your answer here...",
+            submit: "Submit Answer",
+            correct: "Correct! Well done! Opening the documents...",
+            incorrect: "Incorrect, please try again.",
+            hintBtn: "Get a Hint",
+            revealBtn: "Show Answer",
+            answerLabel: "The correct answer is:",
+            answer: "She didn't wake up to the sound of the gunshot",
+            attempts: "Incorrect attempts: ",
+            successTitle: "Correct answer! Well done!",
+            successText: "You have successfully found the hidden clue. You can now view the documents below.",
+            successBtn: "Continue",
+            doc1: "Nader's Letter",
+            doc2: "Fateh Sidqi's Confession",
+            page: "Page",
+            hints: [
+                "Make sure your answer is phrased correctly.",
+                "Go back to the interrogation files.",
+                "Check Asala Al-Jawhari's file.",
+                "It is related to Asala suffering from insomnia."
+            ]
+        }
+    };
+
+    const T = TEXT[LANG];
+    const D = DOCS[LANG];
+
+    /* ---------- Answer checking ----------
+       Correct if the answer mentions the gunshot sound,
+       OR says she did NOT wake up / did NOT hear it. Works in Arabic and English. */
+    const SOUND_WORDS = [
+        "رصاص", "اطلاق", "مسدس", "سلاح", "صوت نار", "صوت النار",
+        "gunshot", "gun shot", "gunfire", "shot", "gun", "bullet", "firing"
+    ];
+    const WAKE_WORDS = [
+        "استيقظ", "استقيظ", "استيقاظ", "يوقظ", "تصح", "سمع", "تسمع", "انتبه",
+        "wake", "woke", "awake", "waking", "hear", "heard"
+    ];
+    const NEG_RE = /(^|\s)(لم|ما|عدم|لا|not|never|no)(\s|$)|n't|didnt|doesnt|wasnt/;
+
+    function normalize(str) {
+        return str
+            .toLowerCase()
+            .replace(/[\u064B-\u0652\u0640]/g, "")   // tashkeel + tatweel
+            .replace(/[أإآ]/g, "ا")
+            .replace(/ة/g, "ه")
+            .replace(/[’`]/g, "'")
+            .replace(/[.,،؛;:!?؟"()\-_]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+
+    function isCorrect(answer) {
+        const a = normalize(answer);
+        if (SOUND_WORDS.some(w => a.includes(w))) return true;
+        return WAKE_WORDS.some(w => a.includes(w)) && NEG_RE.test(a);
+    }
+
+    /* ---------- DOM ---------- */
+    const $ = id => document.getElementById(id);
+    const container       = document.querySelector('.container');
+    const questionElement = $('question');
+    const answerInput     = $('answer-input');
+    const submitBtn       = $('submit-btn');
+    const feedbackElement = $('feedback');
+    const hintSection     = $('hint-section');
+    const hintBtn         = $('hint-btn');
+    const hintText        = $('hint-text');
+    const showAnswerBtn   = $('show-answer-btn');
+    const answerDisplay   = $('answer-display');
+    const attemptsElement = $('attempts');
+    const pdfSection      = $('pdf-section');
+    const successCard     = $('success-card');
+    const successCardBtn  = $('success-card-btn');
+    const quizContent     = $('quiz-content');
+    const img1            = $('pdf-image-1');
+    const gallery2        = $('gallery-2');
+
+    let incorrectAttempts = 0;
+    let currentHintIndex = 0;
+    let docsLoaded = false;
+
+    function applyLanguage() {
+        document.documentElement.lang = LANG;
+        document.documentElement.dir = LANG === 'ar' ? 'rtl' : 'ltr';
+        document.title = T.title;
+        questionElement.textContent = T.question;
+        answerInput.placeholder = T.placeholder;
+        answerInput.dir = 'auto';
+        submitBtn.textContent = T.submit;
+        hintBtn.textContent = T.hintBtn;
+        showAnswerBtn.textContent = T.revealBtn;
+        attemptsElement.textContent = T.attempts + incorrectAttempts;
+        $('success-title').textContent = T.successTitle;
+        $('success-text').textContent = T.successText;
+        successCardBtn.textContent = T.successBtn;
+        $('pdf-title-1').textContent = T.doc1;
+        $('pdf-title-2').textContent = T.doc2;
+    }
+
+    function loadDocuments() {
+        if (docsLoaded) return;
+        docsLoaded = true;
+
+        img1.src = encodeURI(D.letter);
+        img1.alt = T.doc1;
+
+        D.confession.forEach((src, i) => {
+            const img = document.createElement('img');
+            img.className = 'gallery-image';
+            img.loading = 'lazy';
+            img.src = encodeURI(src);
+            img.alt = `${T.doc2} - ${T.page} ${i + 1}`;
+            gallery2.appendChild(img);
+        });
+    }
+
+    function checkAnswer() {
+        const userAnswer = answerInput.value.trim();
+        if (userAnswer === '') return;
+
+        if (isCorrect(userAnswer)) {
+            feedbackElement.textContent = T.correct;
+            feedbackElement.className = 'feedback correct show';
+            createConfetti();
+            setTimeout(() => {
+                loadDocuments();
+                showSuccessCard();
+            }, 1200);
+        } else {
+            incorrectAttempts++;
+            feedbackElement.textContent = T.incorrect;
+            feedbackElement.className = 'feedback incorrect show';
+            attemptsElement.textContent = T.attempts + incorrectAttempts;
+
+            if (incorrectAttempts >= 2) hintSection.classList.add('show');
+
+            answerInput.style.animation = 'shake 0.5s';
+            setTimeout(() => { answerInput.style.animation = ''; }, 500);
+            setTimeout(() => { answerInput.value = ''; answerInput.focus(); }, 1000);
+        }
+    }
+
+    function showSuccessCard() {
+        quizContent.classList.add('hidden');
+        successCard.classList.add('show');
+        setTimeout(() => pdfSection.classList.add('show'), 350);
+        container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function hideSuccessCard() {
+        successCard.classList.remove('show');
+        pdfSection.classList.remove('show');
+        quizContent.classList.remove('hidden');
+        container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function provideHint() {
+        if (currentHintIndex >= T.hints.length) return;
+        hintText.textContent = T.hints[currentHintIndex];
+        hintText.classList.add('show');
+        currentHintIndex++;
+
+        if (currentHintIndex >= T.hints.length) {
+            hintBtn.style.display = 'none';
+            showAnswerBtn.style.display = 'inline-block';
+            setTimeout(() => showAnswerBtn.classList.add('visible'), 100);
+        }
+    }
+
+    function revealAnswer() {
+        answerDisplay.textContent = '';
+        answerDisplay.append(T.answerLabel, document.createElement('br'), T.answer);
+        answerDisplay.style.display = 'block';
+        showAnswerBtn.style.display = 'none';
+    }
+
+    function togglePdf(header, content) {
+        const open = content.classList.toggle('show');
+        header.classList.toggle('open', open);
+    }
+
+    function createConfetti() {
+        const colors = ['#AA814B', '#8C6B3B', '#EDE6D6', '#A89F8E'];
+
+        for (let i = 0; i < 50; i++) {
+            const c = document.createElement('div');
+            Object.assign(c.style, {
+                width: '10px', height: '10px', position: 'absolute', borderRadius: '50%',
+                top: '50%', left: '50%', opacity: '0', pointerEvents: 'none', zIndex: '20',
+                backgroundColor: colors[Math.floor(Math.random() * colors.length)]
+            });
+            container.appendChild(c);
+
+            const anim = c.animate([
+                { opacity: 1, transform: 'translate(0, 0) rotate(0deg)' },
+                { opacity: 1, transform: `translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px) rotate(${Math.random() * 360}deg)` }
+            ], { duration: 1000, easing: 'ease-out' });
+            anim.onfinish = () => c.remove();
+        }
+    }
+
+    submitBtn.addEventListener('click', checkAnswer);
+    hintBtn.addEventListener('click', provideHint);
+    showAnswerBtn.addEventListener('click', revealAnswer);
+    successCardBtn.addEventListener('click', hideSuccessCard);
+    answerInput.addEventListener('keydown', e => { if (e.key === 'Enter') checkAnswer(); });
+    $('pdf-header-1').addEventListener('click', () => togglePdf($('pdf-header-1'), $('pdf-content-1')));
+    $('pdf-header-2').addEventListener('click', () => togglePdf($('pdf-header-2'), $('pdf-content-2')));
+
+    applyLanguage();
+</script>
+</body>
+</html>

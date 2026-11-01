@@ -4,6 +4,64 @@
     if (!root || root.dataset.ready === '1') return;
     root.dataset.ready = '1';
 
+  // Puzzle 1 stars website, opened in the "Star Archive" browser window. Change these to the real addresses.
+  const STAR_SITE = {
+    en: 'https://pdacases.com/star-archive/',
+    ar: 'https://pdacases.com/ar/star-archive/'
+  };
+  // Mouse and keyboard sounds, modelled on a real mouse switch and keyboard key: a tiny noise "strike" rings
+  // through the plastic's resonances. Rendered once, then replayed with slight pitch changes so no two clicks match.
+  const clickSounds = (() => {
+    const SR = 44100, bufs = {};
+    let ctx = null;
+    function strike(c, at, modes, hp, burst, body = 1){
+      const len = Math.ceil(SR * burst), buf = c.createBuffer(1, len, SR), d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 2;
+      const src = c.createBufferSource(); src.buffer = buf;
+      const high = c.createBiquadFilter(); high.type = 'highpass'; high.frequency.value = hp;
+      src.connect(high);
+      const tick = c.createGain(); tick.gain.value = 0.4; high.connect(tick).connect(c.destination);
+      modes.forEach(([f, g, ring]) => {
+        const q = Math.PI * f * ring;
+        const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q;
+        const amp = c.createGain(); amp.gain.value = g * Math.sqrt(q) * body;
+        high.connect(bp).connect(amp).connect(c.destination);
+      });
+      src.start(at);
+    }
+    const recipes = {
+      down: [0.06, c => strike(c, 0, [[3100, 1, 0.012], [5300, 0.55, 0.008], [1700, 0.35, 0.01]], 1500, 0.0012)],
+      up:   [0.05, c => strike(c, 0, [[3600, 1, 0.008], [6100, 0.4, 0.006]], 2200, 0.001, 0.6)],
+      key:  [0.09, c => { strike(c, 0, [[1900, 1, 0.018], [3400, 0.5, 0.01]], 900, 0.002); strike(c, 0.012, [[320, 1, 0.03], [750, 0.5, 0.02]], 120, 0.003, 0.7); }]
+    };
+    const levels = { down: 0.22, up: 0.13, key: 0.2 };
+    Object.entries(recipes).forEach(([key, [dur, build]]) => {
+      const c = new OfflineAudioContext(1, Math.ceil(SR * dur), SR);
+      build(c);
+      c.startRendering().then(buf => {
+        const d = buf.getChannelData(0); let peak = 0;
+        for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i]));
+        if (peak) for (let i = 0; i < d.length; i++) d[i] /= peak;
+        bufs[key] = buf;
+      }).catch(() => {});
+    });
+    return key => {
+      if (!bufs[key]) return;
+      ctx = ctx || new AudioContext();
+      if (ctx.state === 'suspended') ctx.resume();
+      const src = ctx.createBufferSource(), gain = ctx.createGain();
+      src.buffer = bufs[key]; src.playbackRate.value = 0.95 + Math.random() * 0.1;
+      gain.gain.value = levels[key];
+      src.connect(gain).connect(ctx.destination); src.start();
+    };
+  })();
+  root.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse' && e.button === 0) clickSounds('down'); }, true);
+  root.addEventListener('pointerup', e => { if (e.pointerType === 'mouse' && e.button === 0) clickSounds('up'); }, true);
+  root.addEventListener('keydown', e => { if (!e.repeat && (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Enter')) clickSounds('key'); }, true);
+
+  // Start in Arabic when the page address is /ar/… (or ends in /ar, or has ?lang=ar)
+  const startLang = (/^\/ar(\/|$)|\/ar\/?$/.test(location.pathname) || new URLSearchParams(location.search).get('lang') === 'ar') ? 'ar' : 'en';
+
   const i18n = {
     en: {
       myComputer: "My Computer",
@@ -12,6 +70,9 @@
       calculator: "Calculator",
       mail: "Mail",
       recycleBin: "Recycle Bin",
+      starArchive: "Star Archive",
+      browserBack: "Back", browserReload: "Reload", address: "Address",
+      starOffline: "The Star Archive could not be reached. Try Reload.",
       start: "Start",
       pdaDesk: "PDA DESK",
       aboutComp: "About this computer",
@@ -63,6 +124,9 @@
       calculator: "الآلة الحاسبة",
       mail: "البريد",
       recycleBin: "سلة المهملات",
+      starArchive: "أرشيف النجوم",
+      browserBack: "رجوع", browserReload: "تحديث", address: "العنوان",
+      starOffline: "تعذّر الوصول إلى أرشيف النجوم. اضغط تحديث.",
       start: "ابدأ",
       pdaDesk: "مكتب PDA",
       aboutComp: "حول هذا الكمبيوتر",
@@ -323,6 +387,7 @@
         else if(key==='calculator') span.textContent = i18n[state.lang].calculator;
         else if(key==='mail') span.textContent = i18n[state.lang].mail;
         else if(key==='recycle') span.textContent = i18n[state.lang].recycleBin;
+        else if(key==='stars') span.textContent = i18n[state.lang].starArchive;
       }
     });
 
@@ -340,6 +405,7 @@
       else if(key==='notepad') btn.innerHTML = icon + i18n[state.lang].notepad;
       else if(key==='calculator') btn.innerHTML = icon + i18n[state.lang].calculator;
       else if(key==='mail') btn.innerHTML = icon + i18n[state.lang].mail;
+      else if(key==='stars') btn.innerHTML = icon + i18n[state.lang].starArchive;
       else if(key==='about-btn') btn.innerHTML = icon + i18n[state.lang].aboutComp;
       else if(key==='shutdown-btn') btn.innerHTML = icon + i18n[state.lang].shutDown;
     });
@@ -528,6 +594,19 @@
           <hr>
           <div class="mono">${i18n[state.lang].aboutSys}</div>
         `;
+      }
+    }else if(type === 'stars'){
+      w.querySelector('.title').textContent = i18n[state.lang].starArchive;
+      rec.title = i18n[state.lang].starArchive;
+      if(rec.task) rec.task.textContent = rec.title;
+      w.querySelector('[data-browser="back"]').textContent = '◀ ' + i18n[state.lang].browserBack;
+      w.querySelector('[data-browser="reload"]').textContent = '↻ ' + i18n[state.lang].browserReload;
+      w.querySelector('.browser-label').textContent = i18n[state.lang].address;
+      const frame = w.querySelector('iframe');
+      if(frame.dataset.lang !== state.lang){
+        frame.dataset.lang = state.lang;
+        loadStarSite(frame, state.lang);
+        w.querySelector('.browser-address').value = STAR_SITE[state.lang];
       }
     }else if(type === 'shutdown'){
       w.querySelector('.title').textContent = i18n[state.lang].shutDownTitle;
@@ -973,6 +1052,47 @@
     `,{type: 'about', width:360,height:260});
   }
 
+  // pdacases.com forbids showing its pages inside a frame (frame-ancestors 'none'), so the window
+  // fetches the stars page and shows its content directly (srcdoc) instead of pointing the frame at it.
+  async function loadStarSite(frame, lang){
+    const url = STAR_SITE[lang];
+    frame.dataset.lang = lang;
+    try {
+      const res = await fetch(url, { credentials: 'same-origin' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      let html = await res.text();
+      html = html.replace(/<script id="pda-puzzle-extras">[\s\S]*?<\/script>/i, ''); // the site's floating EN/عربي switch belongs to the desktop page, not this window
+      const head = '<base href="' + esc(url) + '">' +
+        (lang === 'ar' ? '<script>document.documentElement.lang="ar";document.documentElement.dir="rtl"<\/script>' : '');
+      frame.srcdoc = html.replace(/<head[^>]*>/i, m => m + head);
+    } catch (err) {
+      console.warn('Star Archive could not be loaded from ' + url, err);
+      frame.srcdoc = '<body style="margin:0;padding:24px;font:14px Tahoma,Arial,sans-serif;background:#d4d0c8;color:#111"' +
+        (lang === 'ar' ? ' dir="rtl"' : '') + '>' + esc(i18n[lang].starOffline) + '</body>';
+    }
+  }
+
+  // A small retro web browser showing the stars website
+  function openStars(){
+    const url = STAR_SITE[state.lang];
+    return makeWindow(i18n[state.lang].starArchive, `
+      <div class="browser">
+        <div class="browser-bar">
+          <button class="retro-btn" data-browser="back" type="button">◀ ${i18n[state.lang].browserBack}</button>
+          <button class="retro-btn" data-browser="reload" type="button">↻ ${i18n[state.lang].browserReload}</button>
+          <span class="browser-label">${i18n[state.lang].address}</span>
+          <input class="browser-address" type="text" readonly value="${esc(url)}" aria-label="${i18n[state.lang].address}">
+        </div>
+        <iframe class="browser-frame" title="${esc(i18n[state.lang].starArchive)}"></iframe>
+      </div>
+    `,{type: 'stars', width:780, height:540, left:120, top:40, afterOpen:w=>{
+      const frame = w.querySelector('iframe');
+      loadStarSite(frame, state.lang);
+      w.querySelector('[data-browser="reload"]').addEventListener('click',()=>{ loadStarSite(frame, state.lang); });
+      w.querySelector('[data-browser="back"]').addEventListener('click',()=>{ loadStarSite(frame, state.lang); });
+    }});
+  }
+
   function openReadme(){
     return openNotepad(readmeText[state.lang], 'README.TXT');
   }
@@ -986,6 +1106,7 @@
     if(target==='calculator') return openCalculator();
     if(target==='mail') return openMail();
     if(target==='recycle') return openRecycle();
+    if(target==='stars') return openStars();
     if(target==='readme') return openReadme();
     if(target==='personal') return makeWindow(state.lang === 'ar' ? 'شخصي' : 'PERSONAL', `<div class="bevel">${i18n[state.lang].noFiles}</div>`,{width:340,height:210});
     if(target==='system') return makeWindow(state.lang === 'ar' ? 'النظام' : 'SYSTEM', '<div class="bevel mono">PDA-DOS SYSTEM DIRECTORY<br><br>BOOT.COM<br>COMMAND.COM<br>MOUSE.DRV<br>VGA.DRV<br>README.TXT</div>',{width:390,height:260});
@@ -999,8 +1120,18 @@
     });
   });
 
+  // Go to the other language's address, the same way the site's EN / عربي switch does:
+  // previews use ?lang=ar, the live site uses /ar/… in front of the address
   taskLangBtn.addEventListener('click', () => {
-    setLanguage(state.lang === 'en' ? 'ar' : 'en');
+    const url = new URL(location.href);
+    if (state.lang === 'en') {
+      if (url.pathname.startsWith('/puzzle-preview/')) url.searchParams.set('lang', 'ar');
+      else url.pathname = '/ar' + url.pathname;
+    } else {
+      url.searchParams.delete('lang');
+      url.pathname = url.pathname.replace(/^\/ar(?=\/|$)/, '') || '/';
+    }
+    location.assign(url.href);
   });
 
   startBtn.addEventListener('click',e=>{
@@ -1069,6 +1200,8 @@
   updateClock();
   const clockTimer=setInterval(updateClock,1000);
   window.addEventListener('pagehide',()=>clearInterval(clockTimer),{once:true});
+
+  setLanguage(startLang);
   }
 
   if(document.readyState === 'loading'){
@@ -1076,4 +1209,4 @@
   }else{
     initPDARetroDesktop();
   }
-})();F
+})();

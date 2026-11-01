@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mystery Box</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  /* ===== Reset & Body Setup ===== */
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #0d0b09 url('https://pdacases.com/wp-content/uploads/2025/11/topv2eiw-box.png') no-repeat center center / cover;
+    font-family: 'Cinzel', serif, system-ui;
+    color: #f9c74f;
+    overflow-x: hidden;
+    padding: 20px;
+  }
+
+  /* ===== Main Cinematic Container Card ===== */
+  .game-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(12, 10, 8, 0.75);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 209, 102, 0.25);
+    border-radius: 20px;
+    padding: 25px 30px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), inset 0 0 120px rgba(0, 0, 0, 0.7);
+    max-width: 100%;
+  }
+
+  /* ===== Solution Banner Above Box ===== */
+  .solution-banner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding: 10px 22px;
+    background: rgba(0, 0, 0, 0.75);
+    border: 1px solid rgba(255, 209, 102, 0.35);
+    border-radius: 14px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+  }
+
+  .solution-title {
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #f9c74f;
+    opacity: 0.9;
+  }
+
+  .solution-sequence {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .solution-tile {
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 209, 102, 0.5);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+    object-fit: cover;
+    transition: transform 0.2s ease;
+  }
+
+  .solution-tile:hover {
+    transform: scale(1.1);
+  }
+
+  .solution-arrow {
+    color: #f9c74f;
+    font-size: 1rem;
+    opacity: 0.7;
+  }
+
+  /* ===== Frame & Game Area ===== */
+  .frame-container {
+    position: relative;
+    width: 600px;
+    height: 600px;
+    perspective: 1200px;
+  }
+
+  .frame {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-image: url('https://pdacases.com/wp-content/uploads/2025/11/Layer-131.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    z-index: 100;
+    pointer-events: none;
+  }
+
+  .box-interior {
+    position: absolute;
+    width: 480px;
+    height: 520px;
+    top: 40px;
+    left: 63px;
+    background-image: url('https://pdacases.com/wp-content/uploads/2025/11/Lay213er-1.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 40;
+  }
+
+  /* Points layer */
+  .points-layer {
+    position: absolute;
+    width: 75%;
+    height: 72%;
+    opacity: 0;
+    transition: opacity 1s ease 0.5s;
+    pointer-events: auto;
+    left: 12.5%;
+    top: 14%;
+  }
+
+  .game-wrapper.box-opened .points-layer {
+    opacity: 1;
+  }
+
+  .point-marker {
+    position: absolute;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background-color: #ffd166;
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(255, 209, 102, 0.9);
+    transition: all 0.3s ease;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+  }
+
+  .point-marker::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-color: transparent;
+    border: 2px solid #ffd166;
+    animation: pulse 2s infinite;
+    box-sizing: border-box;
+  }
+
+  .point-marker:hover {
+    transform: translate(-50%, -50%) scale(1.25);
+    box-shadow: 0 0 20px rgba(255, 209, 102, 1);
+  }
+
+  @keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    70% { transform: scale(2.5); opacity: 0; }
+    100% { transform: scale(2.5); opacity: 0; }
+  }
+
+  /* Puzzle grid */
+  .game-box {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+    width: 455px;
+    height: 515px;
+    position: absolute;
+    top: 50%;
+    left: 48%;
+    transform-origin: top center;
+    transform: translate(-50%, -50%);
+    transition: none;
+    z-index: 50;
+  }
+
+  @keyframes dynamicBoxDisappear {
+    0% {
+      transform: translate(-50%, -50%) scale(1) rotateX(0deg);
+      opacity: 1;
+      filter: blur(0);
+    }
+    50% {
+      transform: translate(-50%, -50%) scale(1.05) rotateX(5deg);
+      opacity: 0.8;
+      filter: blur(2px);
+    }
+    100% {
+      transform: translate(-50%, -50%) scale(0.5) rotateX(90deg) translateY(-20px);
+      opacity: 0;
+      filter: blur(15px);
+    }
+  }
+
+  .game-wrapper.box-opened .game-box {
+    animation: dynamicBoxDisappear 0.8s forwards;
+    pointer-events: none;
+  }
+
+  .tile {
+    border: none;
+    cursor: pointer;
+    background-size: 100% 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-color: transparent;
+    transition: all 0.3s ease;
+    animation: none !important; 
+  }
+
+  .tile:hover:not(.fade-out):not(.shrink):not(.dissolve) {
+    transform: scale(1.06);
+    filter: drop-shadow(0 0 6px #ffd166);
+  }
+
+  .tile.fade-out { animation: fadeOut 0.5s forwards; }
+  .tile.shrink { animation: shrink 0.7s forwards; }
+  .tile.dissolve { animation: dissolve 0.9s forwards; }
+
+  @keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+
+  @keyframes shrink {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(0); opacity: 0; }
+  }
+
+  @keyframes dissolve {
+    0% { filter: blur(0px) opacity(1); transform: scale(1); }
+    100% { filter: blur(10px) opacity(0); transform: scale(0.8); }
+  }
+
+  @keyframes dynamicDisappear {
+    0% { transform: scale(1) rotateZ(0deg); opacity: 1; filter: blur(0); }
+    100% { transform: scale(0.1) rotateZ(90deg); opacity: 0; filter: blur(8px); }
+  }
+
+  /* Status badge */
+  .status {
+    margin-top: 20px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #f9c74f;
+    text-align: center;
+    padding: 10px 28px;
+    border-radius: 30px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(255, 209, 102, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+    text-shadow: 0 2px 5px rgba(0, 0, 0, 0.9);
+  }
+
+  /* Fullscreen paper viewer */
+  .paper-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.88);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    z-index: 999;
+  }
+  
+  .paper-overlay.visible {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .paper-view-container {
+    position: relative;
+    max-width: 92%;
+    max-height: 92%;
+    animation: popIn 0.35s ease;
+  }
+  
+  .paper-full-img { 
+    max-height: 85vh; 
+    max-width: 100%; 
+    border-radius: 8px; 
+    box-shadow: 0 10px 35px rgba(0,0,0,0.8);
+  }
+
+  .close-arrow {
+    position: absolute;
+    top: -45px;
+    left: 0;
+    font-size: 40px;
+    color: #fff;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  
+  .close-arrow:hover { color: #ffd166; }
+
+  @keyframes popIn { 
+    from { transform: scale(0.85); opacity: 0; } 
+    to { transform: scale(1); opacity: 1; } 
+  }
+
+  /* Mobile Responsive */
+  @media (max-width: 650px) {
+    .game-wrapper { padding: 15px; }
+    .solution-tile { width: 32px; height: 32px; }
+    .solution-title { font-size: 0.7rem; }
+    .frame-container { width: 340px; height: 340px; }
+    .game-box { width: 260px; height: 290px; }
+    .box-interior { width: 270px; height: 290px; top: 20px; left: 30px; }
+    .status { font-size: 0.95rem; padding: 8px 18px; }
+    .points-layer {
+      left: 50%; top: 50%;
+      transform: translate(-50%, -50%) scale(0.55);
+      width: 100%; height: 100%;
+    }
+    .point-marker { width: 20px; height: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="game-wrapper" id="mainContainer">
+  <!-- Solution Sequence displayed above the box -->
+  <div class="solution-banner">
+    <span class="solution-title">Puzzle Solution</span>
+    <div class="solution-sequence">
+      <img src="https://pdacases.com/wp-content/uploads/2025/11/Layer-5.png" alt="Clover" class="solution-tile">
+      <span class="solution-arrow">➔</span>
+      <img src="https://pdacases.com/wp-content/uploads/2025/11/Layer-4.png" alt="Sun" class="solution-tile">
+      <span class="solution-arrow">➔</span>
+      <img src="https://pdacases.com/wp-content/uploads/2025/11/Layer-1.png" alt="Moon" class="solution-tile">
+      <span class="solution-arrow">➔</span>
+      <img src="https://pdacases.com/wp-content/uploads/2025/11/Layer-16.png" alt="Key" class="solution-tile">
+      <span class="solution-arrow">➔</span>
+      <img src="https://pdacases.com/wp-content/uploads/2025/11/Layer-11.png" alt="Rain Cloud" class="solution-tile">
+    </div>
+  </div>
+
+  <div class="frame-container">
+    <div class="frame"></div>
+
+    <div class="box-interior">
+      <div class="points-layer" id="pointsLayer">
+        <div class="point-marker" style="top: 20%; left: 20%;" data-full="https://pdacases.com/wp-content/uploads/2025/11/grunund.png"></div>
+        <div class="point-marker" style="top: 55%; left: 25%;" data-full="https://pdacases.com/wp-content/uploads/2025/11/grunge-342234p4per-back2gr34ound.png"></div>
+        <div class="point-marker" style="top: 80%; left: 60%;" data-full="https://pdacases.com/wp-content/uploads/2026/01/grunge-paper-back2ground.png"></div>
+        <div class="point-marker" style="top: 95%; left: 25%;" data-full="https://pdacases.com/wp-content/uploads/2025/11/gru34nge-paper-back2ground.png"></div>
+      </div>
+    </div>
+
+    <div class="game-box" id="gameBox"></div>
+  </div>
+
+  <div class="status" id="status">Click the symbols in the correct order</div>
+</div>
+
+<div class="paper-overlay" id="paperOverlay">
+  <div class="paper-view-container">
+    <div class="close-arrow" onclick="closePaper()">←</div>
+    <img id="fullPaperImg" class="paper-full-img" alt="Secret Document">
+  </div>
+</div>
+
+<script>
+const rows = 5, cols = 4;
+const totalTiles = rows * cols;
+const gameBox = document.getElementById("gameBox");
+const mainContainer = document.getElementById("mainContainer");
+const status = document.getElementById("status");
+
+const symbolAnimations = ['fade-out', 'shrink', 'dissolve'];
+
+for (let i = 0; i < totalTiles; i++) {
+  const tile = document.createElement("button");
+  tile.className = "tile";
+  tile.dataset.index = i;
+  tile.style.backgroundImage = `url('https://pdacases.com/wp-content/uploads/2025/11/Layer-${i+1}.png')`;
+  gameBox.appendChild(tile);
+}
+
+const correctOrder = [4, 3, 0, 15, 10];
+let progress = 0, solved = false;
+
+gameBox.addEventListener("click", (e) => {
+  const target = e.target;
+  if (solved || !target.classList.contains("tile")) return;
+  const index = parseInt(target.dataset.index);
+
+  if (index === correctOrder[progress]) {
+    const randomAnimation = symbolAnimations[Math.floor(Math.random() * symbolAnimations.length)];
+    
+    target.classList.remove(...symbolAnimations);
+    target.classList.add(randomAnimation);
+    
+    target.style.opacity = '0';
+    target.style.pointerEvents = 'none'; 
+    
+    progress++;
+    if (progress === correctOrder.length) {
+      solved = true;
+      status.textContent = "✅ Puzzle Solved";
+
+      const tiles = document.querySelectorAll(".tile");
+      let tilesToAnimate = [];
+      
+      tiles.forEach(tile => {
+        if (tile.style.opacity !== '0') {
+          tilesToAnimate.push(tile);
+        }
+      });
+      
+      if (tilesToAnimate.length === 0) {
+        setTimeout(() => {
+          mainContainer.classList.add("box-opened");
+          status.textContent = "Click the points to reveal the papers";
+        }, 100); 
+        return;
+      }
+
+      tilesToAnimate.forEach((tile, i) => {
+        setTimeout(() => {
+          tile.classList.remove(...symbolAnimations);
+          tile.style.animation = "dynamicDisappear 0.7s forwards";
+          tile.style.pointerEvents = "none";
+        }, i); 
+      });
+
+      const totalTileAnimationTime = tilesToAnimate.length;
+      setTimeout(() => {
+        mainContainer.classList.add("box-opened");
+        status.textContent = "Click the points to reveal the papers";
+      }, totalTileAnimationTime + 50); 
+    }
+    else {
+      status.textContent = `Good job! Keep going (${progress}/${correctOrder.length})`;
+    }
+  } else {
+    progress = 0;
+    status.textContent = "❌ Wrong order! Start over";
+    
+    document.querySelectorAll(".tile").forEach(t => {
+      t.classList.remove(...symbolAnimations);
+      t.style.pointerEvents = 'auto';
+      t.style.opacity = ''; 
+      t.style.transform = ''; 
+      t.style.filter = '';
+      t.style.animation = ''; 
+    });
+  }
+});
+
+const overlay = document.getElementById('paperOverlay');
+const fullImg = document.getElementById('fullPaperImg');
+
+function openPaperFromPoint(e) {
+  const full = e.target.dataset.full;
+  if (!full) return;
+  fullImg.src = full;
+  overlay.classList.add('visible');
+}
+
+document.querySelectorAll('.point-marker').forEach(point => {
+  point.addEventListener('click', openPaperFromPoint);
+  point.tabIndex = 0;
+  point.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter' || ev.key === ' ') openPaperFromPoint(ev);
+  });
+});
+
+function closePaper() {
+  overlay.classList.remove('visible');
+}
+
+overlay.addEventListener('click', (e) => { if (e.target === overlay) closePaper(); });
+</script>
+</body>
+</html>

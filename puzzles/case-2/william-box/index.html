@@ -1,0 +1,698 @@
+<title>المهمة-الاولة</title>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    .container {
+        width: 100%;
+        max-width: 650px;
+        background: linear-gradient(145deg, #14202C 0%, #0F1924 100%);
+        border-radius: 12px;
+        overflow: hidden;
+        border: 2px solid #192533;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+        position: relative;
+    }
+    
+    .content {
+        padding: 35px;
+    }
+    
+    .question {
+        font-size: 24px;
+        margin-bottom: 30px;
+        text-align: center;
+        line-height: 1.6;
+        color: #EDE6D6;
+        padding: 20px;
+        background: rgba(26, 39, 53, 0.5);
+        border-radius: 8px;
+        border-right: 4px solid #AA814B;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 3);
+    }
+
+    body.lang-en .question {
+        border-right: none;
+        border-left: 4px solid #AA814B;
+    }
+    
+    .input-container {
+        position: relative;
+        margin-bottom: 25px;
+    }
+    
+    .input-field {
+        width: 100%;
+        padding: 18px 22px;
+        background: rgba(15, 25, 36, 0.7);
+        border: 2px solid #192533;
+        border-radius: 8px;
+        color: #EDE6D6;
+        font-size: 18px;
+        transition: all 0.3s;
+    }
+    
+    .input-field:focus {
+        outline: none;
+        border-color: #AA814B;
+        box-shadow: 0 0 0 3px rgba(196, 163, 90, 0.3);
+        transform: scale(1.02);
+    }
+    
+    .input-field::placeholder {
+        color: #8C6B3B;
+    }
+    
+    .submit-btn {
+        width: 100%;
+        padding: 18px;
+        background: linear-gradient(90deg, #AA814B 0%, #8C6B3B 100%);
+        border: none;
+        border-radius: 8px;
+        color: #14202C;
+        font-size: 20px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 5px 15px rgba(196, 163, 90, 0.3);
+        letter-spacing: 1px;
+    }
+    
+    .submit-btn:hover {
+        background: linear-gradient(90deg, #8C6B3B 0%, #AA814B 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(196, 163, 90, 0.4);
+    }
+    
+    .submit-btn:active {
+        transform: translateY(1px);
+    }
+    
+    .feedback {
+        text-align: center;
+        margin-top: 25px;
+        min-height: 28px;
+        font-weight: 500;
+        padding: 15px;
+        border-radius: 8px;
+        font-size: 18px;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all 0.5s ease;
+    }
+    
+    .feedback.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    
+    .correct {
+        color: #AA814B;
+        background: rgba(196, 163, 90, 0.1);
+        border: 1px solid #8C6B3B;
+    }
+    
+    .incorrect {
+        color: #AA814B;
+        background: rgba(140, 107, 59, 0.15);
+        border: 1px solid #8C6B3B;
+    }
+    
+    .hint-section {
+        margin-top: 25px;
+        text-align: center;
+        padding: 20px;
+        background: rgba(26, 39, 53, 0.5);
+        border-radius: 8px;
+        border: 1px solid #192533;
+        opacity: 0;
+        transform: scale(0.9);
+        transition: all 0.5s ease;
+    }
+    
+    .hint-section.show {
+        opacity: 1;
+        transform: scale(1);
+    }
+    
+    .hint-btn {
+        background: transparent;
+        border: 2px solid #AA814B;
+        color: #AA814B;
+        padding: 12px 28px;
+        border-radius: 30px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 16px;
+    }
+    
+    .hint-btn:hover {
+        background: rgba(196, 163, 90, 0.15);
+    }
+    
+    .hint-text {
+        background: rgba(15, 25, 36, 0.7);
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 20px;
+        border-right: 3px solid #AA814B;
+        text-align: right;
+        color: #EDE6D6;
+        font-size: 17px;
+        line-height: 1.6;
+        opacity: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: all 0.5s ease;
+    }
+
+    body.lang-en .hint-text {
+        border-right: none;
+        border-left: 3px solid #AA814B;
+        text-align: left;
+    }
+    
+    .hint-text.show {
+        opacity: 1;
+        max-height: 200px;
+    }
+
+    /* --- New Button Style & Animation --- */
+    .reveal-btn {
+        background: #AA814B;
+        border: 2px solid #AA814B;
+        color: #14202C;
+        font-weight: bold;
+        padding: 12px 28px;
+        border-radius: 30px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 16px;
+        margin-top: 20px;
+        display: none; 
+        opacity: 0;
+        transform: translateY(15px);
+    }
+
+    /* State when visible */
+    .reveal-btn.visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .reveal-btn:hover {
+        background: #8C6B3B;
+        border-color: #8C6B3B;
+        color: #fff;
+    }
+
+    .answer-display {
+        display: none;
+        margin-top: 20px;
+        padding: 20px;
+        width: 100%;
+        background: linear-gradient(145deg, #2a1f10 0%, #1f1408 100%);
+        border: 2px solid #AA814B;
+        border-radius: 8px;
+        color: #EDE6D6;
+        font-size: 20px;
+        font-weight: bold;
+        text-align: center;
+        box-shadow: 0 0 15px rgba(1700, 129, 75, 1);
+        animation: fadeIn 0.5s ease;
+    }
+    
+    .attempts {
+        text-align: center;
+        margin-top: 25px;
+        color: #8C6B3B;
+        font-size: 16px;
+        background: rgba(26, 39, 53, 0.5);
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px dashed #192533;
+    }
+            
+    /* Gold divider */
+    .gold-divider {
+        text-align: center;
+        margin: 30px 0;
+        color: #AA814B;
+    }
+
+    /* Magnifying Glass Image */
+    .magnifying-glass-icon {
+        width: 40px; 
+        height: auto;
+        display: inline-block; 
+        transform-origin: center center;
+        animation: magnifyJiggle 8s ease-in-out infinite alternate;
+    }
+
+    @keyframes magnifyJiggle {
+        0% { transform: translate(0, 0) rotate(0deg); }
+        20% { transform: translate(8px, -6px) rotate(3deg); }
+        40% { transform: translate(-5px, 9px) rotate(-4deg); }
+        60% { transform: translate(-7px, -4px) rotate(-2deg); }
+        80% { transform: translate(4px, 8px) rotate(4deg); }
+        100% { transform: translate(0, 0) rotate(0deg); }
+    }
+
+    /* Success Card */
+    .success-card {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(145deg, #1a2939 0%, #14202C 100%);
+        border-radius: 12px;
+        padding: 35px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    .success-card.show {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .success-card h2 {
+        color: #AA814B;
+        margin-bottom: 15px;
+        font-size: 48px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .success-card p {
+        color: #EDE6D6;
+        font-size: 28px;
+        line-height: 1.6;
+        margin-bottom: 20px;
+        font-weight: 500;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Image Zoom */
+    #zoom-container {
+        width: 100%;
+        margin: 15px auto;
+        border-radius: 8px;
+        border: 2px solid #AA814B;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        position: relative;
+        overflow: hidden;
+        cursor: crosshair;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    #zoom-image {
+        display: block;
+        height: 100%;
+    }
+
+    .success-card-btn {
+        background: linear-gradient(90deg, #AA814B 0%, #8C6B3B 100%);
+        border: none;
+        border-radius: 10px;
+        color: #14202C;
+        padding: 12px 25px;
+        font-size: 26px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 5px 15px rgba(196, 163, 90, 0.3);
+        margin-top: 15px;
+    }
+    
+    .success-card-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(196, 163, 90, 0.5);
+    }
+    
+    .success-card-btn:active {
+        transform: translateY(1px);
+    }
+    
+    /* Animations */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+        20%, 40%, 60%, 80% { transform: translateX(10px); }
+    }
+    
+    @media (max-width: 600px) {         
+        .question {
+            font-size: 20px;
+        }
+        
+        .content {
+            padding: 25px;
+        }
+        
+        .success-card {
+            padding: 25px;
+        }
+        
+        .success-card h2 {
+            font-size: 40px;
+        }
+        
+        .success-card p {
+            font-size: 26px;
+        }
+    }
+</style>
+
+<div class="container">
+    <div class="success-card" id="success-card">
+        <div id="zoom-container">
+            <img src="https://pdacases.com/wp-content/uploads/2026/05/wmremove-transformed-topaz-scaled.png" alt="Success Image" id="zoom-image">
+            <div id="zoom-lens"></div>
+        </div>
+        <button class="success-card-btn" id="success-card-btn">حسنًا</button>
+    </div>
+
+    <div class="content" id="quiz-content">
+        <div class="gold-divider">
+            <img src="https://pdacases.com/wp-content/uploads/2025/11/64d5cc18c0370268169d0bee4e347fa3-removebg-preview.png" class="magnifying-glass-icon" alt="Magnifying Glass">
+        </div>
+        
+        <p class="question" id="question">توصل إلى كلمة السر لفتح الصندوق الذي تحت لوحة رامبرانت " سيدة ورجل يرتديان ثياب سوداء"؟</p>
+        
+        <div class="input-container">
+            <input type="text" class="input-field" id="answer-input" placeholder="أدخل إجابتك هنا...">
+        </div>
+        
+        <button class="submit-btn" id="submit-btn">
+            إرسال الإجابة
+        </button>
+        
+        <p class="feedback" id="feedback"></p>
+        
+        <div class="hint-section" id="hint-section">
+            <button class="hint-btn" id="hint-btn">
+                اطلب تلميحًا
+            </button>
+            
+            <p class="hint-text" id="hint-text"></p>
+            
+            <button class="reveal-btn" id="show-answer-btn">
+                أظهر الإجابة
+            </button>
+
+            <div class="answer-display" id="answer-display"></div>
+        </div>
+        
+        <p class="attempts" id="attempts">المحاولات غير الصحيحة: 0</p>
+    </div>
+</div>
+
+<script>
+    // URL Check for Arabic vs English
+    const isArabic = window.location.pathname.includes('/ar/');
+    if (!isArabic) {
+        document.body.classList.add('lang-en');
+    }
+
+    // Localization Translations & Data
+    const i18n = {
+        ar: {
+            question: "توصل إلى كلمة السر لفتح الصندوق الذي تحت لوحة رامبرانت ' سيدة ورجل يرتديان ثياب سوداء' ؟",
+            placeholder: "أدخل إجابتك هنا...",
+            submitBtn: "إرسال الإجابة",
+            correctFeedback: "صحيح! أحسنت!",
+            incorrectFeedback: "غير صحيح، يرجى المحاولة مرة أخرى.",
+            hintBtn: "اطلب تلميحًا",
+            showAnswerBtn: "أظهر الإجابة",
+            answerDisplay: ":الإجابة الصحيحة هي<br>",
+            attemptsText: "المحاولات غير الصحيحة: ",
+            successCardBtn: "حسنًا",
+            hints: [
+                "تأكد من صياغتك للجواب",
+                "فكر بالصورة التي فوق الصندوق",
+                "اربط قصة الصورة التي فوق الصندوق بحالة إيفان ورغبته بالانتقام",
+                "الكلمة السرية هي اسم شخص"
+            ]
+        },
+        en: {
+            question: "Find the password to open the box under Rembrandt's painting, “A Lady and Gentleman in Black”.",
+            placeholder: "Enter your answer here...",
+            submitBtn: "Submit Answer",
+            correctFeedback: "Correct! Well done!",
+            incorrectFeedback: "Incorrect, please try again.",
+            hintBtn: "Request a Hint",
+            showAnswerBtn: "Show the answer",
+            answerDisplay: "The correct answer is:<br>",
+            attemptsText: "Incorrect attempts: ",
+            successCardBtn: "OK",
+            hints: [
+                "Make sure your answer is phrased correctly.",
+                "Think about the picture above the box.",
+                "Relate the hidden story of the painting above the box to Evan’s condition and his desire for revenge.",
+                "The password is a name of a person."
+            ]
+        }
+    };
+
+    const currentLang = isArabic ? 'ar' : 'en';
+
+    // Quiz data
+    const quizData = {
+        question: i18n[currentLang].question,
+        correctAnswers: [
+            "William","Wiliam","وليم","وليام","ولييم"
+        ],
+        hints: i18n[currentLang].hints
+    };
+
+    // DOM elements
+    const questionElement = document.getElementById('question');
+    const answerInput = document.getElementById('answer-input');
+    const submitBtn = document.getElementById('submit-btn');
+    const feedbackElement = document.getElementById('feedback');
+    const hintSection = document.getElementById('hint-section');
+    const hintBtn = document.getElementById('hint-btn');
+    const hintText = document.getElementById('hint-text');
+    const showAnswerBtn = document.getElementById('show-answer-btn');
+    const answerDisplay = document.getElementById('answer-display');
+    const attemptsElement = document.getElementById('attempts');
+    const successCard = document.getElementById('success-card');
+    const successCardBtn = document.getElementById('success-card-btn');
+    const quizContent = document.getElementById('quiz-content');
+
+    // Quiz state
+    let incorrectAttempts = 0;
+    let currentHintIndex = 0;
+    const zoomFactor = 0.7;
+
+    // Function to set up the image zoom effect
+    function setupImageZoom() {
+        const zoomContainer = document.getElementById('zoom-container');
+        const zoomImage = document.getElementById('zoom-image');
+        const zoomLens = document.getElementById('zoom-lens');
+        
+        if (!zoomContainer || !zoomImage) return;
+
+        let containerRect, containerWidth, containerHeight, lensSize;
+        let imageNaturalWidth, imageNaturalHeight;
+
+        function updateDimensions() {
+            containerRect = zoomContainer.getBoundingClientRect();
+            containerWidth = zoomContainer.offsetWidth;
+            containerHeight = zoomContainer.offsetHeight;
+            lensSize = zoomLens.offsetWidth;
+            imageNaturalWidth = zoomImage.naturalWidth;
+            imageNaturalHeight = zoomImage.naturalHeight;
+        }
+
+        function moveLens(e) {
+            let x = e.clientX - containerRect.left;
+            let y = e.clientY - containerRect.top;
+
+            x = Math.max(0, Math.min(x, containerWidth));
+            y = Math.max(0, Math.min(y, containerHeight));
+
+            zoomLens.style.left = x + 'px';
+            zoomLens.style.top = y + 'px';
+
+            const widthRatio = imageNaturalWidth / zoomImage.offsetWidth;
+            const heightRatio = imageNaturalHeight / zoomImage.offsetHeight;
+            
+            let bgX = -(x * zoomFactor * widthRatio - (lensSize / 1.5));
+            let bgY = -(y * zoomFactor * heightRatio - (lensSize / 1.5));
+            
+            zoomLens.style.backgroundSize = `${zoomImage.offsetWidth * zoomFactor * widthRatio}px ${zoomImage.offsetHeight * zoomFactor * heightRatio}px`;
+            zoomLens.style.backgroundPosition = `${bgX}px ${bgY}px`;
+        }
+
+        zoomContainer.addEventListener('mouseenter', (e) => {
+            updateDimensions();
+            zoomLens.style.display = 'block';
+        });
+
+        zoomContainer.addEventListener('mouseleave', (e) => {
+            zoomLens.style.display = 'none';
+        });
+
+        zoomContainer.addEventListener('mousemove', moveLens);
+        
+        zoomImage.onload = updateDimensions;
+        updateDimensions();
+    }
+
+    // Initialize function
+    function initialize() {
+        questionElement.textContent = quizData.question;
+        answerInput.placeholder = i18n[currentLang].placeholder;
+        submitBtn.textContent = i18n[currentLang].submitBtn;
+        hintBtn.textContent = i18n[currentLang].hintBtn;
+        showAnswerBtn.textContent = i18n[currentLang].showAnswerBtn;
+        attemptsElement.textContent = i18n[currentLang].attemptsText + incorrectAttempts;
+        successCardBtn.textContent = i18n[currentLang].successCardBtn;
+
+        setupImageZoom();
+    }
+
+    // Check answer function
+    function checkAnswer() {
+        const userAnswer = answerInput.value.trim().toLowerCase();
+        
+        if (userAnswer === '') return;
+        
+        const isCorrect = quizData.correctAnswers.some(answer => 
+            userAnswer === answer.toLowerCase()
+        );
+        
+        if (isCorrect) {
+            feedbackElement.textContent = i18n[currentLang].correctFeedback;
+            feedbackElement.className = 'feedback correct show';
+            createConfetti();
+
+            setTimeout(() => {
+                showSuccessCard();
+            }, 1000);
+        } else {
+            incorrectAttempts++;
+            feedbackElement.textContent = i18n[currentLang].incorrectFeedback;
+            feedbackElement.className = 'feedback incorrect show';
+            attemptsElement.textContent = i18n[currentLang].attemptsText + incorrectAttempts;
+            
+            if (incorrectAttempts >= 2) {
+                hintSection.classList.add('show');
+            }
+            
+            answerInput.style.animation = 'shake 0.5s';
+            setTimeout(() => {
+                answerInput.style.animation = '';
+            }, 500);
+            
+            setTimeout(() => {
+                answerInput.value = '';
+                answerInput.focus();
+            }, 1000);
+        }
+    }
+
+    // Show success card
+    function showSuccessCard() {
+        successCard.classList.add('show');
+        quizContent.style.opacity = '0.3';
+    }
+    
+    // Hide success card
+    function hideSuccessCard() {
+        successCard.classList.remove('show');
+        quizContent.style.opacity = '1';
+    }
+
+    // Provide hint function
+    function provideHint() {
+        if (currentHintIndex < quizData.hints.length) {
+            hintText.textContent = quizData.hints[currentHintIndex];
+            hintText.classList.add('show');
+            currentHintIndex++;
+            
+            if (currentHintIndex >= quizData.hints.length) {
+                hintBtn.style.display = 'none';
+                
+                showAnswerBtn.style.display = 'inline-block';
+                
+                setTimeout(() => {
+                    showAnswerBtn.classList.add('visible');
+                }, 100);
+            }
+        }
+    }
+
+    // Reveal Answer Function
+    function revealAnswer() {
+        answerDisplay.innerHTML = i18n[currentLang].answerDisplay + quizData.correctAnswers[0];
+        answerDisplay.style.lineHeight = "1.75";
+        answerDisplay.style.display = 'block';
+        showAnswerBtn.style.display = 'none';
+    }
+
+    // Create confetti effect
+    function createConfetti() {
+        const colors = ['#AA814B', '#8C6B3B', '#EDE6D6', '#A89F8E'];
+        const container = document.querySelector('.content');
+        
+        for (let i = 0; i < 50; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.width = '10px';
+            confetti.style.height = '10px';
+            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.position = 'absolute';
+            confetti.style.borderRadius = '50%';
+            confetti.style.top = '50%';
+            confetti.style.left = '50%';
+            confetti.style.opacity = '0';
+            
+            container.appendChild(confetti);
+            
+            const animation = confetti.animate([
+                { opacity: 1, transform: 'translate(0, 0) rotate(0deg)' },
+                { opacity: 1, transform: `translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px) rotate(${Math.random() * 360}deg)` }
+            ], {
+                duration: 1000,
+                easing: 'ease-out'
+            });
+            
+            animation.onfinish = () => {
+                confetti.remove();
+            };
+        }
+    }
+
+    // Event listeners
+    submitBtn.addEventListener('click', checkAnswer);
+    hintBtn.addEventListener('click', provideHint);
+    showAnswerBtn.addEventListener('click', revealAnswer);
+    successCardBtn.addEventListener('click', hideSuccessCard);
+    
+    answerInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') checkAnswer();
+    });
+
+    // Initialize
+    initialize();
+</script>

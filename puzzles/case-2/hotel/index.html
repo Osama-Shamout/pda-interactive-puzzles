@@ -1,0 +1,558 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+
+/* MAIN CONTAINER */
+.larry-room-wrapper {
+    width: 100%;
+    min-height: 100vh;
+    flex-direction: column;
+    padding: 20px;
+}
+
+/* QUESTION BOX STYLE */
+.quiz-box {
+    width: 100%;
+    max-width: 700px;
+    background: #111;
+    border: 1px solid #333;
+    padding: 25px;
+    border-radius: 16px;
+    text-align: center;
+    margin: 10px auto;
+}
+
+.quiz-box h3 {
+    font-size: 22px;
+    margin-bottom: 20px;
+    color: #EDE6D6;
+    line-height: 1.6;
+}
+
+.quiz-box input[type="text"] {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #444;
+    border-radius: 8px;
+    background: #222;
+    color: #fff;
+    font-size: 16px;
+    text-align: center;
+}
+
+.quiz-box input[type="text"]:focus {
+    border-color: #AA814B;
+    outline: none;
+}
+
+.quiz-btn {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(90deg, #AA814B 0%, #8C6B3B 100%);
+    color: #000;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s;
+    font-weight: bold;
+}
+
+.quiz-btn:hover {
+    transform: scale(1.05);
+}
+
+.hint-btn {
+    background: transparent;
+    border: 1px dashed #AA814B;
+    color: #AA814B;
+    margin-top: 15px;
+    padding: 8px 15px;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+    display: inline-block;
+}
+
+.hint-btn:hover {
+    background: rgba(170, 129, 75, 0.1);
+}
+
+.show-answer-btn {
+    background: #AA814B;
+    border: 1px solid #AA814B;
+    color: #000;
+    margin-top: 10px;
+    padding: 8px 15px;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+    display: none;
+    font-weight: bold;
+}
+
+.show-answer-btn:hover {
+    background: #8C6B3B;
+}
+
+.hint-text {
+    color: #A0A0A0;
+    font-size: 14px;
+    margin-top: 10px;
+    font-style: italic;
+    min-height: 20px;
+}
+
+.answer-text {
+    color: #ffd166;
+    font-size: 16px;
+    margin-top: 12px;
+    font-weight: bold;
+    display: none;
+}
+
+.error-msg {
+    color: #ff4d4d;
+    font-size: 14px;
+    margin-top: 10px;
+    display: none;
+}
+
+/* AUDIO SECTION */
+.audio-box {
+    width: 100%;
+    max-width: 700px;
+    background: #111;
+    border: 1px solid #333;
+    padding: 25px;
+    border-radius: 16px;
+    text-align: center;
+    margin: 10px auto;
+}
+
+.audio-box h2 {
+    font-size: 24px;
+    margin-bottom: 30px;
+    text-align: center;
+    line-height: 1.6;
+    color: #EDE6D6;
+    background: rgba(11, 11, 11, 0.5);
+    border-radius: 8px;
+    padding: 10px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+body.lang-ar .audio-box h2 {
+    border-right: 4px solid #EDE6D6;
+}
+
+body.lang-en .audio-box h2 {
+    border-left: 4px solid #EDE6D6;
+}
+
+.audio-box audio {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+/* ENTER BUTTON */
+.enter-btn {
+    padding: 14px 30px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(90deg, #AA814B 0%, #8C6B3B 100%);
+    color: #000;
+    font-size: 18px;
+    cursor: pointer;
+    transition: 0.3s;
+    font-weight: bold;
+}
+
+.enter-btn:hover {
+    transform: scale(1.05);
+}
+
+/* ROOM SECTION */
+.room-section {
+    display: none;
+    width: 100%;
+    max-width: 1000px;
+    margin: 30px auto 0 auto;
+    position: relative;
+}
+
+.room-image {
+    width: 100%;
+    display: block;
+    border-radius: 18px;
+}
+
+/* POINTS */
+.point-marker {
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background-color: #ffd166;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(255,209,102,0.8);
+    transition: all 0.3s ease;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+}
+
+.point-marker::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-color: transparent;
+    border: 2px solid #ffd166;
+    animation: pulse 2s infinite;
+    box-sizing: border-box;
+}
+
+.point-marker:hover {
+    transform: translate(-50%, -50%) scale(1.2);
+    box-shadow: 0 0 15px rgba(255,209,102,1);
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+/* MODAL */
+.popup {
+    position: fixed !important;
+    inset: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0,0,0,0.92);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 999999 !important;
+    padding: 20px;
+}
+
+.popup-content {
+    width: 100%;
+    max-width: 900px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 18px;
+    padding: 20px;
+    position: relative;
+}
+
+.close-popup {
+    position: absolute;
+    top: 15px;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: #ffd166;
+    color: #000;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 10;
+}
+
+body.lang-ar .close-popup {
+    left: 15px;
+}
+
+body.lang-en .close-popup {
+    right: 15px;
+}
+
+.popup-content img {
+    width: 100%;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    display: block;
+}
+
+/* SCROLL GALLERY */
+.scroll-gallery {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.scroll-gallery img {
+    width: 100%;
+    border-radius: 12px;
+}
+
+/* RTL / LTR SUPPORT */
+body.lang-ar {
+    direction: rtl;
+    text-align: right;
+}
+
+body.lang-en {
+    direction: ltr;
+    text-align: left;
+}
+
+@media(max-width: 768px) {
+    .audio-box, .quiz-box {
+        padding: 18px;
+    }
+
+    .audio-box h2 {
+        font-size: 20px;
+    }
+
+    .enter-btn, .quiz-box input[type="text"], .quiz-btn {
+        width: 100%;
+    }
+}
+</style>
+
+<div class="larry-room-wrapper">
+
+    <!-- GATE QUIZ SECTION -->
+    <div class="quiz-box" id="quizBox">
+        <h3 id="quizQuestion"></h3>
+        <input type="text" id="quizAnswer" placeholder="">
+        <button class="quiz-btn" id="submitAnswer"></button>
+        <div class="error-msg" id="errorMsg"></div>
+        <br>
+        <button class="hint-btn" id="hintBtn"></button>
+        <div class="hint-text" id="hintText"></div>
+        <br>
+        <button class="show-answer-btn" id="showAnswerBtn"></button>
+        <div class="answer-text" id="answerText"></div>
+    </div>
+
+    <!-- ROOM -->
+    <div class="room-section" id="roomSection">
+        <img id="roomImg" src="" class="room-image">
+
+        <!-- POINT 1 -->
+        <div class="point-marker" style="top:69%; left:56%;" onclick="openPopup('popup1')"></div>
+
+        <!-- POINT 2 -->
+        <div class="point-marker" style="top:70%; left:65%;" onclick="openPopup('popup2')"></div>
+
+        <!-- POINT 3 -->
+        <div class="point-marker" style="top:73%; left:62%;" onclick="openPopup('popup3')"></div>
+    </div>
+
+    <!-- AUDIO + BUTTON (Hidden initially) -->
+    <div class="audio-box" id="audioBox" style="display: none;">
+        <h2 id="audioTitle"></h2>
+
+        <audio id="audioPlayer" controls="">
+            <source id="audioSource" src="" type="audio/mpeg">
+        </audio>
+
+        <button class="enter-btn" id="enterRoom"></button>
+    </div>
+
+</div>
+
+<!-- POPUP 1 -->
+<div class="popup" id="popup1">
+    <div class="popup-content">
+        <button class="close-popup" onclick="closePopup('popup1')">✕</button>
+        <img id="newspaperImg" src="">
+    </div>
+</div>
+
+<!-- POPUP 2 -->
+<div class="popup" id="popup2">
+    <div class="popup-content">
+        <button class="close-popup" onclick="closePopup('popup2')">✕</button>
+        <div class="scroll-gallery">
+            <img id="diary1Img" src="">
+            <img id="diary2Img" src="">
+        </div>
+    </div>
+</div>
+
+<!-- POPUP 3 -->
+<div class="popup" id="popup3">
+    <div class="popup-content">
+        <button class="close-popup" onclick="closePopup('popup3')">✕</button>
+        <img id="evanLetterImg" src="">
+    </div>
+</div>
+
+<script>
+// Language Detection via URL path
+const isArabic = window.location.pathname.includes('/ar/');
+const currentLang = isArabic ? 'ar' : 'en';
+
+document.body.classList.add(isArabic ? 'lang-ar' : 'lang-en');
+
+// i18n Data Configuration
+const i18n = {
+    ar: {
+        quizQuestion: "ابحث عن غرفة لاري لورنس من بين لائحة أسماء نزلاء الطابق الحادي عشر؟",
+        placeholder: "اكتب الاجابة هنا",
+        submitBtn: "تحقق من الاجابة",
+        errorMsg: "الإجابة غير صحيحة، حاول مجدداً.",
+        hintBtn: "طلب تلميح",
+        showAnswerBtn: "إظهار الإجابة",
+        revealedAnswer: "الإجابة الصحيحة هي: نويل ريمارك (أو 1107)",
+        audioTitle: "غرفة لاري لورنس",
+        enterBtn: "ادخل الغرفة",
+        hintsPool: [
+            "تأكد من صياغة الإجابة بشكل صحيح",
+            "ركز بالأسماء وليس أرقام الغرف وحسب",
+            "(VIP) ركز على الضيوف المهمين",
+            "موجود بالفعل على القائمة، فكر بطريقة ذكية وخارج الصندوق Leon Kramer"
+        ],
+        assets: {
+            roomImg: "https://pdacases.com/wp-content/uploads/2026/05/ChatGPT-Image-May-15-2026-08_35_12-PM-topaz-scaled.png",
+            audioVoice: "https://pdacases.com/wp-content/uploads/2026/07/William2.aac",
+            newspaper: "https://pdacases.com/wp-content/uploads/2026/06/Winkerton-newspaper-scaled.png",
+            diary1: "https://pdacases.com/wp-content/uploads/2026/06/Diary1-scaled.png",
+            diary2: "https://pdacases.com/wp-content/uploads/2026/06/Diary4-scaled.png",
+            evanLetter: "https://pdacases.com/wp-content/uploads/2026/05/رسالة-من-إيفان-إلى-وليم-1.png"
+        }
+    },
+    en: {
+        quizQuestion: "Find Larry Lawrence’s room on the eleventh-floor guest list.",
+        placeholder: "Enter the answer here.",
+        submitBtn: "Check the answer.",
+        errorMsg: "The answer is incorrect, try again.",
+        hintBtn: "Request a hint.",
+        showAnswerBtn: "Show Answer",
+        revealedAnswer: "Correct Answer is: Noel Remark (or 1107)",
+        audioTitle: "Hotel",
+        enterBtn: "Enter Room",
+        hintsPool: [
+            "Make sure the answer is phrased correctly.",
+            "Focus on the names, not just the room numbers.",
+            "Focus on the important guests (VIP).",
+            "It is already on the list. Think cleverly and outside the box: Leon Kramer."
+        ],
+        assets: {
+            roomImg: "https://pdacases.com/wp-content/uploads/2026/09/hotel-en-scaled.png",
+            audioVoice: "https://pdacases.com/wp-content/uploads/2026/09/case-2-En-voice-2.mp3",
+            newspaper: "https://pdacases.com/wp-content/uploads/2026/09/Gemini_Generated_Image_9uni7m9uni7m9uni-1.jpg",
+            diary1: "https://pdacases.com/wp-content/uploads/2026/09/Diary1-en-scaled.png",
+            diary2: "https://pdacases.com/wp-content/uploads/2026/09/Diary2-en-scaled.png",
+            evanLetter: "https://pdacases.com/wp-content/uploads/2026/09/en-رسالة-من-إيفان-إلى-وليم-1.png"
+        }
+    }
+};
+
+const currentData = i18n[currentLang];
+
+// Populate Texts and Media Source Links
+function initPage() {
+    document.getElementById("quizQuestion").innerText = currentData.quizQuestion;
+    document.getElementById("quizAnswer").placeholder = currentData.placeholder;
+    document.getElementById("submitAnswer").innerText = currentData.submitBtn;
+    document.getElementById("errorMsg").innerText = currentData.errorMsg;
+    document.getElementById("hintBtn").innerText = currentData.hintBtn;
+    document.getElementById("showAnswerBtn").innerText = currentData.showAnswerBtn;
+    document.getElementById("audioTitle").innerText = currentData.audioTitle;
+    document.getElementById("enterRoom").innerText = currentData.enterBtn;
+
+    // Assets
+    document.getElementById("roomImg").src = currentData.assets.roomImg;
+    
+    const audioPlayer = document.getElementById("audioPlayer");
+    const audioSource = document.getElementById("audioSource");
+    audioSource.src = currentData.assets.audioVoice;
+    audioPlayer.load();
+
+    document.getElementById("newspaperImg").src = currentData.assets.newspaper;
+    document.getElementById("diary1Img").src = currentData.assets.diary1;
+    document.getElementById("diary2Img").src = currentData.assets.diary2;
+    document.getElementById("evanLetterImg").src = currentData.assets.evanLetter;
+}
+
+/* HINTS & SHOW ANSWER SYSTEM */
+let currentHintIndex = 0;
+document.getElementById("hintBtn").addEventListener("click", function() {
+    document.getElementById("hintText").innerText = currentData.hintsPool[currentHintIndex];
+    currentHintIndex++;
+
+    // Show the "Show Answer" button after viewing all hints
+    if (currentHintIndex >= currentData.hintsPool.length) {
+        document.getElementById("showAnswerBtn").style.display = "inline-block";
+    }
+
+    // Loop back through hints if clicked again
+    if (currentHintIndex >= currentData.hintsPool.length) {
+        currentHintIndex = 0;
+    }
+});
+
+/* SHOW ANSWER BUTTON */
+document.getElementById("showAnswerBtn").addEventListener("click", function() {
+    const answerText = document.getElementById("answerText");
+    answerText.innerText = currentData.revealedAnswer;
+    answerText.style.display = "block";
+});
+
+/* VERIFY QUIZ ANSWER */
+document.getElementById("submitAnswer").addEventListener("click", function(){
+    const userAnswer = document.getElementById("quizAnswer").value.trim().toLowerCase();
+    
+    if(userAnswer === "noel remark" || userAnswer === "نويل ريمارك" || userAnswer === "1107" || userAnswer === "١١٠٧") {
+        document.getElementById("quizBox").style.display = "none";
+        document.getElementById("audioBox").style.display = "block";
+        document.getElementById("errorMsg").style.display = "none";
+    } else {
+        document.getElementById("errorMsg").style.display = "block";
+    }
+});
+
+/* ENTER ROOM */
+document.getElementById("enterRoom").addEventListener("click", function(){
+    document.getElementById("roomSection").style.display = "block";
+    this.style.display = "none";
+});
+
+/* OPEN POPUP */
+function openPopup(id){
+    document.getElementById(id).style.display = "flex";
+}
+
+/* CLOSE POPUP */
+function closePopup(id){
+    document.getElementById(id).style.display = "none";
+}
+
+/* CLOSE WHEN CLICK OUTSIDE */
+document.querySelectorAll(".popup").forEach(function(popup){
+    popup.addEventListener("click", function(e){
+        if(e.target === popup){
+            popup.style.display = "none";
+        }
+    });
+});
+
+// Run Initialization
+initPage();
+</script>

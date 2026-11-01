@@ -1,0 +1,253 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Choice Scene</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: #0A1016;
+    color: #EDE6D6;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+.choices {
+    display: flex;
+    width: 100%;
+    height: 100vh;
+}
+
+.choice {
+    position: relative;
+    width: 50%;
+    height: 100%;
+    cursor: pointer;
+    overflow: hidden;
+    transition: .5s;
+}
+
+.choice img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: brightness(.55);
+    transition: .5s;
+}
+
+.choice:hover img {
+    transform: scale(1.08);
+    filter: brightness(.8);
+}
+
+.overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 30px;
+}
+
+.overlay h1 {
+    font-size: 34px;
+    text-shadow: 0 0 20px black;
+}
+
+#story {
+    display: none;
+    min-height: 100vh;
+    padding: 50px;
+    font-size: 18px;
+    white-space: pre-line;
+    line-height: 1.8;
+}
+
+/* RTL styles for Arabic */
+body.lang-ar #story {
+    direction: rtl !important;
+    text-align: right !important;
+}
+
+/* LTR styles for English */
+body.lang-en #story {
+    direction: ltr !important;
+    text-align: left !important;
+}
+
+#back {
+    margin-top: 30px;
+    padding: 10px 25px;
+    background: #956800;
+    color: #EDE6D6;
+    border: none;
+    cursor: pointer;
+    border-radius: 8px;
+    font-size: 18px;
+    transition: 0.3s ease;
+}
+
+#back:hover {
+    background: #b57e00;
+}
+
+audio {
+    display: none;
+}
+
+@media(max-width: 800px) {
+    .choices {
+        flex-direction: column;
+    }
+
+    .choice {
+        width: 100%;
+        height: 50vh;
+    }
+
+    .overlay h1 {
+        font-size: 20px;
+    }
+
+    #story {
+        padding: 30px 20px;
+    }
+}
+</style>
+
+<div class="choices" id="choices">
+    <div class="choice" onclick="choose(1)">
+        <img src="https://pdacases.com/wp-content/uploads/2026/07/ChatGPT-Image-Jul-7-2026-08_26_06-PM.png">
+        <div class="overlay">
+            <h1 id="choice1-title">أقتل إيزابيلا وحقق رغبة إيفان</h1>
+        </div>
+    </div>
+
+    <div class="choice" onclick="choose(2)">
+       <img src="https://pdacases.com/wp-content/uploads/2026/07/1112a4f7-562b-433c-a3df-5ac8fa5992b3-top11az.png">
+        <div class="overlay">
+            <h1 id="choice2-title">لا تقتل إيزابيلا وحقق رغبتها</h1>
+        </div>
+    </div>
+</div>
+
+<div id="story">
+    <p id="text"></p>
+    <button id="back" onclick="location.reload()">العودة</button>
+</div>
+
+<audio id="voice" src="https://pdacases.com/wp-content/uploads/2026/07/William5.aac"></audio>
+<audio id="gun">
+    <source src="https://pdacases.com/wp-content/uploads/2026/06/Gunshot-2.wav">
+</audio>
+
+<script>
+// Detect language from URL path
+const isArabic = window.location.pathname.includes('/ar/');
+const currentLang = isArabic ? 'ar' : 'en';
+
+// Set body language class
+document.body.classList.add(isArabic ? 'lang-ar' : 'lang-en');
+
+// Story Content in both languages
+const i18n = {
+    ar: {
+        choice1Title: "أقتل إيزابيلا وحقق رغبة إيفان",
+        choice2Title: "لا تقتل إيزابيلا وحقق رغبتها",
+        backBtn: "العودة",
+        story1: `دوّى صوت الطلقة في أرجاء المنزل، وتلاه ارتطام جسد إيزابيلا بالأرض. كانت الدماء تنساب من صدرها بينما خيّم الصمت على المكان للحظات.
+
+اندفع أرنولد نحو وليم، وانتزع المسدس من يده ثم رماه بعيدًا وهو يصيح:
+— ما الذي فعلته بحق الجحيم يا عميل وليم؟! ما الذي فعلته؟!
+
+قبض عليه أرنولد بقوة، لكن وليم لم يقاوم. كان شاحب الوجه، وكأن عقله لم يستوعب بعد ما حدث.
+
+استدعى أرنولد المزيد من عملاء مكتب التحقيقات الفيدرالي لتولي مسرح الجريمة، ثم أمر ستيف بأخذ وليم بعيدًا عن المنزل.
+
+وفي الخارج، وبين هدير المطر وصفير الرياح، سار وليم إلى جوار ستيف كالشبح.
+
+ثم تمتم بصوتٍ خافت، وكأنه يحدث شخصًا لا يراه سواه:
+— أأنت سعيد الآن يا أبي؟ هل حققت ما لم ترَ عيناك سواه؟ هل كان الأمر حقًا... يستحق؟`,
+        story2: `رمى وليم مسدسه، ثم سقط على ركبتيه ودفن وجهه بين يديه، رافضًا أن ينظر إلى المرأة التي ربّته يومًا.
+
+اشتد صوت المطر والرعد في الخارج.
+
+وبعد ذلك، غادر أفراد مكتب التحقيقات الفيدرالي القبو برفقة إيزابيلا، تاركينه خلفهم بناءً على طلبه. لقد أراد أن يبقى وحده.
+
+أما أرنولد، فقد توقّف لحظة عند باب القبو، متلمّسًا رسالة وكالة التحقيق الخاصة في جيبه، ثم ألقى عليها نظرة أخيرة قبل أن يرحل.
+
+وقبل أن يدير ظهره، نظر إلى وليم نظرةً أخيرة يملؤها الحزن.
+
+كان آخر من غادر القبو، تاركًا وليم وحده... كما أراد.
+
+وهكذا، وللمرة الأولى منذ سنوات طويلة...
+وجد وليم نفسه وحيدًا تمامًا.`
+    },
+    en: {
+        choice1Title: "Kill Isabella and fulfill Evan's wish",
+        choice2Title: "Do not kill Isabella and fulfill her wish",
+        backBtn: "Back",
+        story1: `The sound of the gunshot echoed throughout the house, followed by the sound of Isabella's body hitting the floor. Blood flowed from her chest as silence fell over the place for a few moments.
+
+Arnold rushed toward William, snatched the gun from his hand, and threw it away as he shouted:
+— What the hell did you do, Agent William?! What did you do?!
+
+Arnold grabbed him firmly, but William did not resist. His face was pale, as though his mind had not yet processed what had happened.
+
+Arnold called in more FBI agents to take over the crime scene, then ordered Steve to take William away from the house.
+
+Outside, amid the roar of the rain and the howling wind, William walked beside Steve like a ghost.
+
+Then he muttered in a low voice, as though speaking to someone only he could see:
+— Are you happy now, Father? Did I accomplish the one thing your eyes have seen for all these years? Was it really… worth it?`,
+        story2: `William threw his gun aside, then fell to his knees and buried his face in his hands, refusing to look at the woman who had once raised him.
+
+The sound of rain and thunder grew louder outside.
+
+After that, the FBI agents left the basement with Isabella, leaving him behind at his request. He wanted to be alone.
+
+As for Arnold, he paused for a moment at the basement door, feeling the Private Detective Agency's letter in his pocket, then gave it one last look before leaving.
+
+Before turning his back, he gave William one final look, filled with sorrow.
+
+He was the last to leave the basement, leaving William alone… just as he wanted.
+
+And so, for the first time in many years…
+William found himself completely alone.`
+    }
+};
+
+// Initialize UI text based on language
+function initLanguage() {
+    document.getElementById("choice1-title").innerText = i18n[currentLang].choice1Title;
+    document.getElementById("choice2-title").innerText = i18n[currentLang].choice2Title;
+    document.getElementById("back").innerText = i18n[currentLang].backBtn;
+}
+
+function choose(number) {
+    document.getElementById("choices").style.display = "none";
+
+    let story = document.getElementById("story");
+    let text = document.getElementById("text");
+
+    story.style.display = "block";
+
+    if (number === 1) {
+        document.getElementById("gun").play();
+        text.innerText = i18n[currentLang].story1;
+    } else {
+        let voice = document.getElementById("voice");
+        voice.play();
+        text.innerText = i18n[currentLang].story2;
+    }
+}
+
+// Run initialization
+initLanguage();
+</script>

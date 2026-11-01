@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#060912">
+<title>Stellar Alignment Archive</title>
+<script>
+  // Language from the address: /ar/… (or …/ar, or ?lang=ar) = Arabic, everything else = English
+  if (/^\/ar(\/|$)|\/ar\/?$/.test(location.pathname) || new URLSearchParams(location.search).get('lang') === 'ar') {
+    document.documentElement.lang = 'ar';
+    document.documentElement.dir = 'rtl';
+  }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Arabic:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --night: #060912;
+    --panel: #0c1220;
+    --line: rgba(150, 175, 225, 0.16);
+    --text: #d5ddef;
+    --dim: rgba(213, 221, 239, 0.55);
+    --star: #f4f1e6;
+    --mark: #f2c14e;          /* the yellow grid marks, as in the brief */
+    --ease: cubic-bezier(0.2, 0, 0, 1);
+    --sans: "IBM Plex Sans", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  html[lang="ar"] { --sans: "IBM Plex Sans Arabic", system-ui, sans-serif; }
+  * { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+  body {
+    margin: 0; min-height: 100dvh;
+    background: radial-gradient(ellipse 90% 60% at 70% 0%, #111a33 0%, var(--night) 60%);
+    background-color: var(--night);
+    color: var(--text); font-family: var(--sans);
+  }
+
+  header {
+    display: flex; align-items: center; gap: 12px;
+    padding: max(18px, env(safe-area-inset-top)) clamp(16px, 4vw, 40px) 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  .logo { width: 28px; height: 28px; flex: none; }
+  .site-name { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: 0.01em; }
+  .site-sub { margin: 2px 0 0; font-size: 12px; color: var(--dim); font-family: var(--mono); }
+  html[lang="ar"] .site-sub { font-family: var(--sans); font-size: 13px; }
+
+  main {
+    display: grid; gap: 20px;
+    grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+    padding: 22px clamp(16px, 4vw, 40px) 40px;
+    max-width: 1080px; margin: 0 auto;
+  }
+  .panel {
+    background: var(--panel); border-radius: 12px; padding: 18px;
+    box-shadow: 0 0 0 1px var(--line), 0 18px 40px rgba(0,0,0,0.35);
+  }
+  .side { display: grid; gap: 20px; align-content: start; }
+
+  label.field { display: block; font-size: 13px; color: var(--dim); margin-bottom: 10px; }
+  .digits { display: flex; gap: 8px; direction: ltr; }
+  .digits input {
+    width: 48px; height: 58px; border-radius: 8px; border: 0; text-align: center;
+    background: #050812; color: var(--mark);
+    font: 500 26px var(--mono);
+    box-shadow: inset 0 0 0 1px var(--line);
+    transition: box-shadow 0.15s var(--ease);
+  }
+  .digits input:focus { outline: none; box-shadow: inset 0 0 0 2px var(--mark); }
+  .search-btn {
+    margin-top: 14px; width: 100%; height: 44px; border: 0; border-radius: 8px; cursor: pointer;
+    background: var(--mark); color: #1a1405; font: 600 15px var(--sans);
+    transition-property: filter, scale; transition-duration: 0.15s; transition-timing-function: var(--ease);
+  }
+  .search-btn:hover { filter: brightness(1.08); }
+  .search-btn:active { scale: 0.96; }
+  .search-btn:focus-visible { outline: 2px solid var(--star); outline-offset: 2px; }
+  .help { margin: 12px 0 0; font-size: 12px; color: var(--dim); line-height: 1.5; }
+  html[lang="ar"] .help { font-size: 13px; }
+
+  .details h2 { margin: 0 0 12px; font-size: 14px; font-weight: 600; }
+  .details dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; font-size: 13px; }
+  .details dt { color: var(--dim); }
+  .details dd { margin: 0; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .details p { margin: 12px 0 0; font-size: 13px; line-height: 1.6; color: var(--dim); text-wrap: pretty; }
+  .details[hidden] { display: none; }
+
+  .chart-wrap { position: relative; }
+  .chart-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+  .chart-title { margin: 0; font-size: 14px; font-weight: 600; }
+  .chart-id { font-family: var(--mono); font-size: 13px; color: var(--mark); font-variant-numeric: tabular-nums; }
+  canvas { display: block; width: 100%; aspect-ratio: 1; border-radius: 8px; background: #03050b; }
+  .chart-msg {
+    position: absolute; inset: 44px 18px 18px; display: grid; place-items: center; text-align: center;
+    padding: 24px; font-size: 14px; color: var(--dim); pointer-events: none;
+  }
+  .chart-msg[hidden] { display: none; }
+
+  @media (max-width: 760px) {
+    main { grid-template-columns: 1fr; }
+    .side { display: contents; }
+    .search { order: 1; } .chart-panel { order: 2; } .details { order: 3; }
+  }
+  @media (max-width: 360px) {
+    .digits input { width: 42px; height: 52px; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <svg class="logo" viewBox="0 0 28 28" aria-hidden="true">
+      <circle cx="14" cy="14" r="13" fill="none" stroke="rgba(150,175,225,.35)"/>
+      <path d="M6 18 L12 9 L18 15 L23 7" fill="none" stroke="#f2c14e" stroke-width="1.4"/>
+      <circle cx="6" cy="18" r="2" fill="#f4f1e6"/><circle cx="12" cy="9" r="1.6" fill="#f4f1e6"/>
+      <circle cx="18" cy="15" r="1.6" fill="#f4f1e6"/><circle cx="23" cy="7" r="1.6" fill="#f4f1e6"/>
+    </svg>
+    <div>
+      <p class="site-name" id="siteName"></p>
+      <p class="site-sub" id="siteSub"></p>
+    </div>
+  </header>
+
+  <main>
+    <div class="side">
+      <form class="panel search" id="form" autocomplete="off">
+        <label class="field" id="idLabel" for="d0"></label>
+        <div class="digits" id="digits">
+          <input id="d0" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-describedby="help">
+          <input inputmode="numeric" maxlength="1" pattern="[0-9]">
+          <input inputmode="numeric" maxlength="1" pattern="[0-9]">
+          <input inputmode="numeric" maxlength="1" pattern="[0-9]">
+        </div>
+        <button class="search-btn" id="searchBtn" type="submit"></button>
+        <p class="help" id="help"></p>
+      </form>
+
+      <section class="panel details" id="details" hidden aria-live="polite">
+        <h2 id="detailsTitle"></h2>
+        <dl id="facts"></dl>
+        <p id="notes"></p>
+      </section>
+    </div>
+
+    <section class="panel chart-panel chart-wrap">
+      <div class="chart-head">
+        <h2 class="chart-title" id="chartTitle"></h2>
+        <span class="chart-id" id="chartId"></span>
+      </div>
+      <canvas id="chart" role="img"></canvas>
+      <div class="chart-msg" id="chartMsg" aria-live="polite"></div>
+    </section>
+  </main>
+
+<script>
+/* =====================================================================
+   CONFIG: edit everything here. كل المحتوى بتعدله من هون.
+   Grid positions are numbered left to right, top to bottom:
+      1  2  3  4
+      5  6  7  8
+      9 10 11 12
+     13 14 15 16
+   Keep `sequence` the same as on the box page.
+   ===================================================================== */
+const CONFIG = {
+  ids: ['3728', '8273'],          // Star IDs that show the alignment (beads counted from the left or the right)
+  sequence: [13, 6, 15, 4, 7],    // EXAMPLE order: the first star is where to start, the last is where to end
+  en: {
+    pageTitle: 'Stellar Alignment Archive',
+    siteName: 'Stellar Alignment Archive',
+    siteSub: 'Public catalogue of recorded alignments',
+    idLabel: 'Star ID',
+    search: 'Show alignment',
+    help: 'Enter the four-digit Star ID to display its recorded alignment.',
+    searching: 'Searching the catalogue…',
+    notFound: 'No alignment is recorded under Star ID {id}.',
+    empty: 'Enter a Star ID to display an alignment.',
+    chartTitle: 'Alignment chart',
+    detailsTitle: 'Record',
+    facts: [['Designation', 'SA-{id}'], ['Stars', '{count}'], ['Start', 'star 1'], ['End', 'star {count}'], ['Epoch', 'J2000.0']],
+    notes: 'The sky is divided like the box: 4 × 4 circles, one for each button. Every star sits on a button. Press the buttons in the order of the numbers, from 1 to {count}.',
+    chartLabel: 'Star chart for Star ID {id}: {count} stars, each on one of 16 button circles laid out like the box, numbered in the order to press them.',
+  },
+  ar: {
+    pageTitle: 'أرشيف اصطفاف النجوم',
+    siteName: 'أرشيف اصطفاف النجوم',
+    siteSub: 'فهرس عام للاصطفافات المسجّلة',
+    idLabel: 'رقم النجم',
+    search: 'اعرض الاصطفاف',
+    help: 'أدخل رقم النجم المكوّن من أربع خانات لعرض الاصطفاف المسجّل له.',
+    searching: 'جارٍ البحث في الفهرس…',
+    notFound: 'لا يوجد اصطفاف مسجّل تحت رقم النجم {id}.',
+    empty: 'أدخل رقم نجم لعرض اصطفاف.',
+    chartTitle: 'خريطة الاصطفاف',
+    detailsTitle: 'السجل',
+    facts: [['التسمية', 'SA-{id}'], ['عدد النجوم', '{count}'], ['البداية', 'النجمة 1'], ['النهاية', 'النجمة {count}'], ['الحقبة', 'J2000.0']],
+    notes: 'السماء مقسّمة مثل الصندوق: ٤ × ٤ دوائر، دائرة لكل زر. كل نجمة تقع على زر. اضغط الأزرار بترتيب الأرقام من 1 إلى {count}.',
+    chartLabel: 'خريطة نجوم لرقم النجم {id}: {count} نجوم، كل نجمة على واحدة من ١٦ دائرة مرتّبة مثل أزرار الصندوق، ومرقّمة بترتيب الضغط.',
+  },
+};
+/* ======================== end of CONFIG ======================== */
+
+const LANG = document.documentElement.lang === 'ar' ? 'ar' : 'en';
+const T = CONFIG[LANG];
+const fill = (text, vars) => text.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
+const $ = id => document.getElementById(id);
+const GREEK = ['α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η', 'θ', 'ι', 'κ', 'λ', 'μ', 'ν', 'ξ', 'ο', 'π'];
+
+document.title = T.pageTitle;
+$('siteName').textContent = T.siteName;
+$('siteSub').textContent = T.siteSub;
+$('idLabel').textContent = T.idLabel;
+$('searchBtn').textContent = T.search;
+$('help').textContent = T.help;
+$('chartTitle').textContent = T.chartTitle;
+$('detailsTitle').textContent = T.detailsTitle;
+
+/* ---------- Mouse and keyboard sounds ----------
+   Modelled on a real mouse switch and keyboard key: a tiny noise "strike" rings through the plastic's
+   resonances. Rendered once, then replayed with slight pitch changes so no two clicks are identical. */
+const clickSound = (() => {
+  const SR = 44100, bufs = {};
+  let ctx = null;
+  function strike(c, at, modes, hp, burst, body = 1) {
+    const len = Math.ceil(SR * burst), buf = c.createBuffer(1, len, SR), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 2;
+    const src = c.createBufferSource(); src.buffer = buf;
+    const high = c.createBiquadFilter(); high.type = 'highpass'; high.frequency.value = hp;
+    src.connect(high);
+    const tick = c.createGain(); tick.gain.value = 0.4; high.connect(tick).connect(c.destination);
+    for (const [f, g, ring] of modes) {
+      const q = Math.PI * f * ring;
+      const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q;
+      const amp = c.createGain(); amp.gain.value = g * Math.sqrt(q) * body;
+      high.connect(bp).connect(amp).connect(c.destination);
+    }
+    src.start(at);
+  }
+  const recipes = {
+    down: [0.06, c => strike(c, 0, [[3100, 1, 0.012], [5300, 0.55, 0.008], [1700, 0.35, 0.01]], 1500, 0.0012)],
+    up: [0.05, c => strike(c, 0, [[3600, 1, 0.008], [6100, 0.4, 0.006]], 2200, 0.001, 0.6)],
+    key: [0.09, c => { strike(c, 0, [[1900, 1, 0.018], [3400, 0.5, 0.01]], 900, 0.002); strike(c, 0.012, [[320, 1, 0.03], [750, 0.5, 0.02]], 120, 0.003, 0.7); }],
+  };
+  const levels = { down: 0.22, up: 0.13, key: 0.2 };
+  for (const [key, [dur, build]] of Object.entries(recipes)) {
+    const c = new OfflineAudioContext(1, Math.ceil(SR * dur), SR);
+    build(c);
+    c.startRendering().then(buf => {
+      const d = buf.getChannelData(0); let peak = 0;
+      for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i]));
+      if (peak) for (let i = 0; i < d.length; i++) d[i] /= peak;
+      bufs[key] = buf;
+    }).catch(() => {});
+  }
+  return key => {
+    if (!bufs[key]) return;
+    ctx ??= new AudioContext();
+    if (ctx.state === 'suspended') ctx.resume();
+    const src = ctx.createBufferSource(), gain = ctx.createGain();
+    src.buffer = bufs[key]; src.playbackRate.value = 0.95 + Math.random() * 0.1;
+    gain.gain.value = levels[key];
+    src.connect(gain).connect(ctx.destination); src.start();
+  };
+})();
+addEventListener('pointerdown', e => { if (e.pointerType === 'mouse' && e.button === 0) clickSound('down'); }, true);
+addEventListener('pointerup', e => { if (e.pointerType === 'mouse' && e.button === 0) clickSound('up'); }, true);
+addEventListener('keydown', e => { if (!e.repeat && (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Enter')) clickSound('key'); }, true);
+
+/* ---------- Four digit boxes ---------- */
+const inputs = [...$('digits').querySelectorAll('input')];
+inputs.forEach((input, i) => {
+  input.setAttribute('aria-label', `${T.idLabel} ${i + 1}`);
+  input.addEventListener('input', () => {
+    input.value = input.value.replace(/\D/g, '').slice(-1);
+    if (input.value && i < 3) inputs[i + 1].focus();
+    if (inputs.every(x => x.value)) search();
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Backspace' && !input.value && i > 0) inputs[i - 1].focus();
+    if (e.key === 'ArrowLeft' && i > 0) inputs[i - 1].focus();
+    if (e.key === 'ArrowRight' && i < 3) inputs[i + 1].focus();
+  });
+  input.addEventListener('paste', e => {
+    const digits = (e.clipboardData.getData('text').match(/\d/g) || []).slice(0, 4);
+    if (!digits.length) return;
+    e.preventDefault();
+    digits.forEach((d, k) => { if (inputs[k]) inputs[k].value = d; });
+    inputs[Math.min(digits.length, 3)].focus();
+    if (inputs.every(x => x.value)) search();
+  });
+});
+$('form').addEventListener('submit', e => { e.preventDefault(); search(); });
+
+/* ---------- Chart ---------- */
+const canvas = $('chart'), g = canvas.getContext('2d');
+let size = 0, background = null, current = null, drawStart = 0, raf = 0;
+
+// mulberry32: a seeded random generator without visible patterns (the sky looks the same on every visit)
+function rng(seed) {
+  return () => {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// A photographic-looking sky, drawn once per size and reused every frame:
+// a Milky Way band with a warm core and dark dust lanes, thousands of stars coloured by temperature, film grain and vignette.
+function paintBackground() {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const b = c.getContext('2d'), r = rng(42), s = size / 600;
+  const gauss = () => (r() + r() + r() - 1.5) / 1.5;
+  // The band runs from the lower left to the upper right, with a slight bend
+  const band = t => ({ x: (-0.1 + 1.2 * t) * size, y: (0.95 - 0.95 * t + Math.sin(t * Math.PI) * -0.08) * size });
+  const blob = (ctx, x, y, rad, rgb, a) => {
+    const grd = ctx.createRadialGradient(x, y, 0, x, y, rad);
+    grd.addColorStop(0, `rgba(${rgb},${a})`); grd.addColorStop(1, `rgba(${rgb},0)`);
+    ctx.fillStyle = grd; ctx.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+  };
+
+  b.fillStyle = '#020309'; b.fillRect(0, 0, size, size);
+
+  // The band's glow and dust are painted small, then enlarged with a blur like a soft lens.
+  // (Thousands of faint gradients at full size leave a visible dither pattern.)
+  const GS = 240, glow = document.createElement('canvas'); glow.width = glow.height = GS;
+  const gl = glow.getContext('2d'), k = GS / size;
+  gl.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 1600; i++) {
+    const t = r(), p = band(t), off = gauss() * 0.14 * size;
+    const core = Math.exp(-((t - 0.55) ** 2) / 0.04) * Math.exp(-((off / size) ** 2) / 0.006);
+    const rgb = core > 0.3 ? '240,205,170' : r() > 0.5 ? '120,95,170' : '85,100,170';
+    blob(gl, (p.x - off * 0.7) * k, (p.y - off * 0.7) * k, (0.05 + r() * 0.1) * GS, rgb, 0.012 + core * 0.024);
+  }
+  // Dark dust lanes along the band
+  gl.globalCompositeOperation = 'source-over';
+  for (let i = 0; i < 320; i++) {
+    const t = 0.15 + r() * 0.75, p = band(t), off = (gauss() * 0.03 + 0.012) * size;
+    blob(gl, (p.x - off * 0.7) * k, (p.y - off * 0.7) * k, (0.025 + r() * 0.06) * GS, '2,3,9', 0.2 + r() * 0.25);
+  }
+  b.filter = `blur(${Math.round(3 * s)}px)`;
+  b.globalCompositeOperation = 'lighter';
+  b.drawImage(glow, 0, 0, size, size);
+  b.filter = 'none';
+
+  // Dense unresolved stars inside the band
+  for (let i = 0; i < 7000; i++) {
+    const t = r(), p = band(t), off = gauss() * 0.1 * size;
+    b.fillStyle = `rgba(230,225,255,${0.04 + r() * 0.18})`;
+    b.beginPath(); b.arc(p.x - off * 0.7 + gauss() * 8 * s, p.y - off * 0.7 + gauss() * 8 * s, (0.3 + r() * 0.4) * s, 0, Math.PI * 2); b.fill();
+  }
+  // Field stars, coloured by temperature (blue hot to orange cool), most faint, a few bright
+  const colors = ['160,180,255', '205,218,255', '248,247,255', '255,244,232', '255,214,170', '255,186,130'];
+  b.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 2600; i++) {
+    const nearBand = i % 3 === 0;
+    let x = r() * size, y = r() * size;
+    if (nearBand) { const p = band(r()), off = gauss() * 0.12 * size; x = p.x - off * 0.7; y = p.y - off * 0.7; }
+    const mag = r() ** 4;
+    const rad = (0.35 + mag * 1.6) * s;
+    const col = colors[Math.floor(r() * colors.length)];
+    if (mag > 0.45) blob(b, x, y, rad * 5, col, 0.18 * mag);
+    b.fillStyle = `rgba(${col},${0.35 + mag * 0.65})`;
+    b.beginPath(); b.arc(x, y, rad, 0, Math.PI * 2); b.fill();
+  }
+  b.globalCompositeOperation = 'source-over';
+  // Film grain and a soft lens vignette
+  const img = b.getImageData(0, 0, size, size), d = img.data;
+  for (let i = 0; i < d.length; i += 4) { const n = (r() - 0.5) * 7; d[i] += n; d[i + 1] += n; d[i + 2] += n; }
+  b.putImageData(img, 0, 0);
+  const v = b.createRadialGradient(size / 2, size / 2, size * 0.35, size / 2, size / 2, size * 0.75);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.55)');
+  b.fillStyle = v; b.fillRect(0, 0, size, size);
+  background = c;
+}
+
+// Yellow marks: four on every edge, one at the middle of each grid column and row.
+// Drawn every frame on top of the drifting sky, so they never move.
+function drawMarks(alpha) {
+  const s = size / 600, len = 14 * s;
+  g.strokeStyle = `rgba(242,193,78,${alpha})`; g.lineWidth = Math.max(2, 3 * s); g.lineCap = 'round';
+  for (let i = 0; i < 4; i++) {
+    const p = ((i + 0.5) / 4) * size;
+    [[p, 6 * s, p, 6 * s + len], [p, size - 6 * s, p, size - 6 * s - len],
+     [6 * s, p, 6 * s + len, p], [size - 6 * s, p, size - 6 * s - len, p]].forEach(([x1, y1, x2, y2]) => {
+      g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+    });
+  }
+}
+
+function resize() {
+  const css = canvas.getBoundingClientRect().width;
+  const next = Math.round(css * Math.min(devicePixelRatio, 2));
+  if (!next || next === size) return;
+  size = canvas.width = canvas.height = next;
+  paintBackground();
+}
+new ResizeObserver(resize).observe(canvas);
+
+// Grid position 1..16 → point at the centre of that cell (never mirrored, also in Arabic)
+const point = n => ({ x: (((n - 1) % 4) + 0.5) / 4 * size, y: (Math.floor((n - 1) / 4) + 0.5) / 4 * size });
+
+function starGlow(x, y, radius, alpha) {
+  const grd = g.createRadialGradient(x, y, 0, x, y, radius * 4);
+  grd.addColorStop(0, `rgba(255,255,255,${alpha})`);
+  grd.addColorStop(0.25, `rgba(210,225,255,${alpha * 0.45})`);
+  grd.addColorStop(1, 'rgba(210,225,255,0)');
+  g.fillStyle = grd; g.beginPath(); g.arc(x, y, radius * 4, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = `rgba(255,255,255,${alpha * 0.5})`; g.lineWidth = 1;
+  g.beginPath(); g.moveTo(x - radius * 3, y); g.lineTo(x + radius * 3, y); g.moveTo(x, y - radius * 3); g.lineTo(x, y + radius * 3); g.stroke();
+  g.fillStyle = '#fff'; g.beginPath(); g.arc(x, y, radius, 0, Math.PI * 2); g.fill();
+}
+
+const SEGMENT = 0.75; // seconds to draw each connecting line
+const ease = t => 1 - Math.pow(1 - t, 3);
+
+let scanStart = -1;    // when a search began (a scan line sweeps the chart while it runs)
+const markFade = { a: 0 }, ringFade = { a: 0 };
+const SKY_OPACITY = 0.75;
+
+// The 16 buttons of the box, drawn as faint rings in the same 4 × 4 layout,
+// so the player sees that every star sits on a button
+const ringRadius = () => size / 4 * 0.3;
+function drawButtonRings(alpha) {
+  const s = size / 600, r = ringRadius();
+  g.lineWidth = 1.5 * s;
+  g.setLineDash([4 * s, 5 * s]);
+  g.strokeStyle = `rgba(233,226,205,${0.28 * alpha})`;
+  for (let n = 1; n <= 16; n++) {
+    const p = point(n);
+    g.beginPath(); g.arc(p.x, p.y, r, 0, Math.PI * 2); g.stroke();
+  }
+  g.setLineDash([]);
+}
+
+function draw(now) {
+  if (!background) return;
+  // The sky drifts very slowly, like a telescope tracking the stars
+  const drift = size * 0.02, t = now / 1000;
+  g.fillStyle = '#03050b'; g.fillRect(0, 0, size, size);
+  g.globalAlpha = SKY_OPACITY; // a dimmer sky lets the puzzle stars and the button rings stand out
+  g.drawImage(background, -drift + Math.sin(t / 14) * drift * 0.8, -drift + Math.cos(t / 17) * drift * 0.8, size + drift * 2, size + drift * 2);
+  g.globalAlpha = 1;
+  markFade.a += (1 - markFade.a) * 0.04;
+  drawMarks(markFade.a);
+  ringFade.a += ((current ? 1 : 0.45) - ringFade.a) * 0.05;
+  drawButtonRings(ringFade.a);
+
+  if (scanStart >= 0) {
+    // Scan line: a soft amber band sweeping down the chart
+    const p = ((now - scanStart) / 900) % 1, y = p * size;
+    const grd = g.createLinearGradient(0, y - size * 0.12, 0, y);
+    grd.addColorStop(0, 'rgba(242,193,78,0)'); grd.addColorStop(1, 'rgba(242,193,78,0.16)');
+    g.fillStyle = grd; g.fillRect(0, y - size * 0.12, size, size * 0.12);
+    g.fillStyle = 'rgba(242,193,78,0.55)'; g.fillRect(0, y - 1, size, 2);
+  }
+
+  if (!current) return;
+  const s = size / 600, pts = current.map(point);
+  const elapsed = (now - drawStart) / 1000;
+
+  // Lines, one after another, in the order of the alignment
+  g.strokeStyle = 'rgba(225,232,255,0.6)'; g.lineWidth = 1.3 * s;
+  g.shadowColor = 'rgba(170,195,255,0.9)'; g.shadowBlur = 10 * s;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const t = Math.min(1, Math.max(0, (elapsed - 0.4 - i * SEGMENT) / SEGMENT));
+    if (t <= 0) break;
+    const k = ease(t), a = pts[i], b = pts[i + 1];
+    g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(a.x + (b.x - a.x) * k, a.y + (b.y - a.y) * k); g.stroke();
+  }
+  g.shadowBlur = 0;
+
+  // Stars light up when their line arrives; the first is the brightest.
+  // Each lit star fills its button ring in amber and gets its step number: press the buttons in this order.
+  const r = ringRadius();
+  pts.forEach((p, i) => {
+    const appear = i === 0 ? 0.1 : 0.4 + i * SEGMENT;
+    const a = Math.min(1, Math.max(0, (elapsed - appear) / 0.35));
+    if (a <= 0) return;
+    const twinkle = 0.88 + 0.12 * Math.sin(now / 600 + i * 1.7);
+    g.strokeStyle = `rgba(242,193,78,${0.85 * a})`; g.lineWidth = 2.5 * s;
+    g.beginPath(); g.arc(p.x, p.y, r * (0.85 + 0.15 * a), 0, Math.PI * 2); g.stroke();
+    g.fillStyle = `rgba(242,193,78,${0.1 * a})`; g.fill();
+    starGlow(p.x, p.y, (i === 0 ? 5 : 3.8) * s, a * twinkle);
+    // Step number badge on the ring's upper corner
+    const bx = p.x + r * 0.72, by = p.y - r * 0.72, br = 13 * s;
+    g.fillStyle = `rgba(242,193,78,${a})`;
+    g.beginPath(); g.arc(bx, by, br, 0, Math.PI * 2); g.fill();
+    g.fillStyle = `rgba(26,20,5,${a})`;
+    g.font = `600 ${Math.round(16 * s)}px "IBM Plex Mono", monospace`;
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(String(i + 1), bx, by + 1 * s);
+    g.textAlign = 'start'; g.textBaseline = 'alphabetic';
+  });
+}
+function loop(now) { draw(now); raf = requestAnimationFrame(loop); }
+
+/* ---------- Smooth DOM motion (Web Animations, no library) ---------- */
+const SMOOTH = 'cubic-bezier(0.22, 1, 0.36, 1)';
+const enter = (el, delay = 0, distance = 8) => el.animate(
+  [{ opacity: 0, transform: `translateY(${distance}px)`, filter: 'blur(2px)' }, { opacity: 1, transform: 'none', filter: 'blur(0)' }],
+  { duration: 500, delay, easing: SMOOTH, fill: 'backwards' });
+// Message under the chart: old text fades out quickly, new text rises in
+function showMessage(text) {
+  const msg = $('chartMsg');
+  if (!text) {
+    msg.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, easing: 'ease-out' }).onfinish = () => { msg.hidden = true; };
+    return;
+  }
+  msg.hidden = false;
+  msg.textContent = text;
+  msg.animate([{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { duration: 250, easing: SMOOTH });
+}
+
+// Each digit pops a little as it is typed
+inputs.forEach(input => input.addEventListener('input', () => {
+  if (input.value) input.animate([{ transform: 'scale(1.14)' }, { transform: 'scale(1)' }], { duration: 250, easing: 'cubic-bezier(0.34, 1.36, 0.64, 1)' });
+}));
+
+/* ---------- Search ---------- */
+let searchTimer = 0;
+function search() {
+  const id = inputs.map(x => x.value).join('');
+  if (!/^\d{4}$/.test(id)) { inputs.find(x => !x.value)?.focus(); return; }
+  clearTimeout(searchTimer);
+  current = null;
+  scanStart = performance.now();
+  $('details').hidden = true;
+  $('chartId').textContent = id;
+  $('chartId').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 250, easing: 'ease-in-out' });
+  showMessage(T.searching);
+  canvas.setAttribute('aria-label', T.searching);
+
+  searchTimer = setTimeout(() => {
+    scanStart = -1;
+    if (!CONFIG.ids.includes(id)) {
+      showMessage(fill(T.notFound, { id }));
+      canvas.setAttribute('aria-label', fill(T.notFound, { id }));
+      // A small head-shake on the digits: this ID is not in the archive
+      $('digits').animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-8px)' }, { transform: 'translateX(6px)' }, { transform: 'translateX(-3px)' }, { transform: 'translateX(0)' }],
+        { duration: 400, easing: 'ease-out' });
+      return;
+    }
+    const seq = CONFIG.sequence, vars = { id, count: seq.length };
+    showMessage('');
+    canvas.setAttribute('aria-label', fill(T.chartLabel, vars));
+    $('facts').replaceChildren(...T.facts.flatMap(([k, v]) => [
+      Object.assign(document.createElement('dt'), { textContent: k }),
+      Object.assign(document.createElement('dd'), { textContent: fill(v, vars) }),
+    ]));
+    $('notes').textContent = fill(T.notes, vars);
+    $('details').hidden = false;
+    enter($('details'));
+    [...$('facts').children].forEach((el, i) => enter(el, 120 + Math.floor(i / 2) * 40, 4));
+    enter($('notes'), 360, 4);
+    current = seq;
+    drawStart = performance.now();
+  }, 1100);
+}
+
+/* ---------- Start: sky fades in, panels rise in one after another ---------- */
+$('chartMsg').textContent = T.empty;
+canvas.setAttribute('aria-label', T.empty);
+canvas.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 900, easing: 'ease-out' });
+[document.querySelector('header'), $('form'), document.querySelector('.chart-panel')].forEach((el, i) => enter(el, i * 80));
+raf = requestAnimationFrame(loop);
+inputs[0].focus({ preventScroll: true });
+</script>
+</body>
+</html>

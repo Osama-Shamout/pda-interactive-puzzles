@@ -1,3 +1,6 @@
+/* The puzzle page is the desktop: fill the whole screen, no page margins */
+html,body{margin:0;height:100%;background:#000;overflow:hidden}
+
 #pda-retro-desktop-1{
   --bg:#0a4f7c;
   --panel:#c0c0c0;
@@ -10,17 +13,13 @@
   --font:"MS Sans Serif",Tahoma,Arial,sans-serif;
   position:relative;
   width:100%;
-  max-width:1100px;
-  min-height:620px;
-  height:min(720px,78vw);
-  min-height:520px;
+  height:100vh;
+  height:100dvh; /* the real visible height on phones, under the browser bars */
   overflow:hidden;
   --wallpaper-url:none;
   background-image: url("https://pdacases.com/wp-content/uploads/2026/09/wallpaper-charon.gif");
   background-size:cover;
   background-position:center;
-  border:3px solid #222;
-  box-shadow:inset 0 0 0 2px #777, 0 10px 35px rgba(0,0,0,.35);
   color:#111;
   font-family:var(--font);
   user-select:none;
@@ -312,9 +311,41 @@
 #pda-retro-desktop-1 .login-row{display:flex;gap:7px;margin-top:8px}
 #pda-retro-desktop-1 .login-row input{flex:1}
 #pda-retro-desktop-1 .hint{margin-top:8px;font-size:11px;color:#444}
+
+/* Smooth opening: windows grow in from 96%, menus drop in from 97% */
+#pda-retro-desktop-1 .window{animation:pda-win-open .25s cubic-bezier(.22,1,.36,1)}
+#pda-retro-desktop-1 .start-menu.open,
+#pda-retro-desktop-1 .context-menu.open{animation:pda-menu-open .25s cubic-bezier(.22,1,.36,1);transform-origin:bottom left}
+#pda-retro-desktop-1.rtl .start-menu.open{transform-origin:bottom right}
+#pda-retro-desktop-1 .context-menu.open{transform-origin:top left}
+@keyframes pda-win-open{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+@keyframes pda-menu-open{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+
+/* Star Archive: a small retro web browser window */
+#pda-retro-desktop-1 .browser{
+  margin:-7px;height:calc(100% + 14px);display:flex;flex-direction:column;
+}
+#pda-retro-desktop-1 .browser-bar{
+  display:flex;align-items:center;gap:4px;padding:4px;border-bottom:1px solid #999;background:#d4d0c8;
+}
+#pda-retro-desktop-1 .browser-label{font-size:12px;padding:0 2px}
+#pda-retro-desktop-1 .browser-address{flex:1;min-width:0;direction:ltr}
+#pda-retro-desktop-1 .browser-frame{
+  flex:1;width:100%;border:2px solid;border-color:var(--dark) var(--light) var(--light) var(--dark);
+  background:#060912;
+}
 @media (max-width:700px){
-  #pda-retro-desktop-1{height:650px;min-height:0}
-  #pda-retro-desktop-1 .window{left:20px;top:50px;width:calc(100% - 40px)}
+  #pda-retro-desktop-1 .browser-label{display:none}
+}
+@media (max-width:700px){
+  /* Phones: every window fills the screen above the taskbar, like a phone app */
+  #pda-retro-desktop-1 .window{
+    left:4px!important;top:4px!important;width:calc(100% - 8px)!important;
+    height:calc(100% - 46px)!important;max-width:none;
+  }
+  #pda-retro-desktop-1 .titlebar{height:32px}
+  #pda-retro-desktop-1 .window-body{height:calc(100% - 32px)}
+  #pda-retro-desktop-1 .win-btn{width:28px;height:26px}
   #pda-retro-desktop-1 .task-btn{min-width:95px}
   #pda-retro-desktop-1 .mail-layout{grid-template-columns:1fr;grid-template-rows:180px minmax(250px,1fr)}
   #pda-retro-desktop-1 .mail-list{min-height:0}

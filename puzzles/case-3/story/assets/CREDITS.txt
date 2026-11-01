@@ -1,0 +1,9 @@
+Photo textures and lighting in this folder are CC0 (public domain): free to use commercially, no attribution required.
+
+leather-*.jpg    Brown Leather (Poly Haven)        https://polyhaven.com/a/brown_leather
+desk-*.jpg       Dark Wood (Poly Haven)            https://polyhaven.com/a/dark_wood
+paper-*.jpg      Paper 003 (ambientCG)             https://ambientcg.com/view?id=Paper003
+room.hdr         Fireplace HDRI (Poly Haven)       https://polyhaven.com/a/fireplace
+
+Upload these files together with index.html in the Admin (a .zip of the STORY PDA folder, or one by one).
+If they are missing, the book still works with plain materials.

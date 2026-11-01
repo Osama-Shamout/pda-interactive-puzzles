@@ -1,0 +1,11 @@
+Photo textures and lighting in this folder come from Poly Haven (https://polyhaven.com).
+License: CC0 (public domain). Free to use commercially, no attribution required.
+
+oak-*.jpg        Oak Veneer 01       https://polyhaven.com/a/oak_veneer_01
+rosewood-*.jpg   Rosewood Veneer 1   https://polyhaven.com/a/rosewood_veneer1
+table-*.jpg      Dark Wood           https://polyhaven.com/a/dark_wood
+carpet-normal.jpg  Dirty Carpet      https://polyhaven.com/a/dirty_carpet
+room.hdr         Fireplace (HDRI)    https://polyhaven.com/a/fireplace
+
+Upload these files together with index.html (as a .zip of the box folder, or one by one).
+If they are missing, the page falls back to wood drawn in code.
