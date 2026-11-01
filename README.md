@@ -91,8 +91,8 @@ Adding a new puzzle means adding one folder under `puzzles/case-N/` and one card
 The 3D puzzles load textures and ES modules, so serve the folder instead of double-clicking the files:
 
 ```bash
-git clone https://github.com/Osama-Shamout/pda-retro-desktop.git
-cd pda-retro-desktop
+git clone https://github.com/Osama-Shamout/pda-interactive-puzzles.git
+cd pda-interactive-puzzles
 python -m http.server 8000      # or: npx serve
 # open http://localhost:8000
 ```
